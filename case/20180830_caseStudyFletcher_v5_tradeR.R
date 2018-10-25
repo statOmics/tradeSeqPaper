@@ -78,9 +78,39 @@ register(DoparParam())
 
 core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = clus.labels, batch=batch))
 #zinb_c <- zinbFit(core, X = '~ clusLabel + batch', commondispersion = TRUE)
+#zinb_c_noCluster <- zinbFit(core, X = '~ batch', commondispersion = TRUE)
+
 #save(zinb_c,file="~/zinbFletcher.rda")
 load("~/zinbFletcher.rda")
 weights <- computeObservationalWeights(zinb_c, countsFiltered)
+#weightsNoCluster <- computeObservationalWeights(zinb_c_noCluster, countsFiltered)
+
+mypar(mfrow=c(2,2))
+hist(weights[countsFiltered==0], ylim=c(0,3.5e6), main="~cluster+batch", xlab="Weight")
+hist(weightsNoCluster[countsFiltered==0], ylim=c(0,3.5e6), main="~batch", xlab="Weight")
+#boxplot cluster+batch
+weightByCluster <- list()
+for(ii in 1:nlevels(clus.labels)){
+  id <- which(clus.labels==levels(clus.labels)[ii])
+  weightByCluster[[ii]] <- weights[,id][which(countsFiltered[,id]==0)]
+}
+weightByClusterVec <- do.call(c,weightByCluster)
+clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
+weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
+boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch")
+#boxplot batch
+weightByCluster <- list()
+for(ii in 1:nlevels(clus.labels)){
+  id <- which(clus.labels==levels(clus.labels)[ii])
+  weightByCluster[[ii]] <- weightsNoCluster[,id][which(countsFiltered[,id]==0)]
+}
+weightByClusterVec <- do.call(c,weightByCluster)
+clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
+weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
+boxplot(weight~clusLabel,data=weightDat, main="~batch")
+### set real cluster names instead of numbers
+
+### plot number of zeros per cluster as well
 ```
 
 
