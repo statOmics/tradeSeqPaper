@@ -87,7 +87,7 @@ S_matrix <- reducedDimS(cds)
     # cn2 <- c("source_prin_graph_dim_1", "source_prin_graph_dim_2")
     # cn3 <- c("target_prin_graph_dim_1", "target_prin_graph_dim_2")
     data_df[, cn1] <- as.matrix(data_df[, cn1]) %*% t(rot_mat)
-plot(data_df[,1],data_df[,2], col=cell_type_color[phenoData(cds)$cell_type2])
+plot(data_df[,1],data_df[,2], col=cell_type_color[phenoData(cds)$cell_type2], pch=16)
 
 
 ### slingshot
@@ -105,14 +105,14 @@ lines(lin, lwd=2)
 crv <- getCurves(lin)
 plot(rd,col=gcolpal[cl], main="color by cluster", xlab="UMAP1", ylab="UMAP2")
 lines(crv, lwd=2)
-plot(rd,col=cell_type_color[phenoData(cds)$cell_type2], main="color by cell type", xlab="UMAP1", ylab="UMAP2")
+plot(rd,col=cell_type_color[phenoData(cds)$cell_type2], main="color by cell type", xlab="UMAP1", ylab="UMAP2", pch=16)
 lines(crv, lwd=2)
 
 ######## tradeR analysis
 library(mgcv)
 library(tradeR)
 counts=exprs(cds)
-#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv))
+#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), Verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
 waldEndResPaul <- endPointTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
@@ -224,14 +224,68 @@ cds2 <- reduceDimension(cds2, max_components = 2, method = 'ICA')
 cds2 <- orderCells(cds2, num_paths=2)
 plot_cell_trajectory(cds2, color_by = "State")
 BEAM_res <- BEAM(cds2,  cores = 1)
+sum(BEAM_res$qval<0.05)
 #save(BEAM_res,file="~/BEAM_resMonocleOldPaulEtal.rda")
 
-plot_cell_trajectory(cds, color_by = "State")
-cds <- orderCells(cds, root_state=3 , num_paths=2)
-plot_cell_trajectory(cds, color_by = "cell_type2")
-BEAM_res <- BEAM(cds,  cores = 1)
-sum(BEAM_res$qval<0.05)
-load("~/BEAM_resMonocleOldPaulEtal.rda") #BEAM_res object
+# plot_cell_trajectory(cds, color_by = "State")
+# cds <- orderCells(cds, root_state=3 , num_paths=2)
+# plot_cell_trajectory(cds, color_by = "cell_type2")
+# BEAM_res <- BEAM(cds,  cores = 1)
+# sum(BEAM_res$qval<0.05)
+# load("~/BEAM_resMonocleOldPaulEtal.rda") #BEAM_res object
+
+#### edgeR analysis
+# # edgeR with cluster labels
+# library(edgeR)
+# d <- DGEList(exprs(cds))
+# d <- calcNormFactors(d)
+# clF <- as.factor(cl)
+# clF <- relevel(clF,ref=4) #set progenitor as ref
+# design <- model.matrix(~clF)
+# d <- estimateDisp(d, design)
+# plotBCV(d)
+# fit <- glmFit(d, design)
+#
+# #leukocyte clusters: 4 6 3 5 7
+# #erythrocyte clusters: 4 2 1
+# Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=8)
+# rownames(Lleuk) <- colnames(fit$coefficients)
+# Lleuk[c("clF6","clF2"),1] <- c(1,-1)
+# Lleuk[c("clF6","clF1"),2] <- c(1,-1)
+# Lleuk[c("clF3","clF2"),3] <- c(1,-1)
+# Lleuk[c("clF3","clF1"),4] <- c(1,-1)
+# Lleuk[c("clF5","clF2"),5] <- c(1,-1)
+# Lleuk[c("clF5","clF1"),6] <- c(1,-1)
+# Lleuk[c("clF7","clF2"),7] <- c(1,-1)
+# Lleuk[c("clF7","clF1"),8] <- c(1,-1)
+# lrtLeuk <- glmLRT(fit,contrast=Lleuk)
+# sum(p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05)
+
+# edgeR with cell type labels
+library(edgeR)
+d <- DGEList(exprs(cds))
+d <- calcNormFactors(d)
+#clF <- as.factor(cl)
+#clF <- relevel(clF,ref=4) #set progenitor as ref
+ct <- as.factor(phenoData(cds)$cell_type2)
+ct <- relevel(ct, ref="Multipotent progenitors")
+design <- model.matrix(~ct)
+d <- estimateDisp(d, design)
+plotBCV(d)
+fit <- glmFit(d, design)
+
+#leukocyte clusters: 4 6 3 5 7
+#erythrocyte clusters: 4 2 1
+Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=5)
+rownames(Lleuk) <- colnames(fit$coefficients)
+Lleuk[c("Erythrocyte","Basophils"),1] <- c(1,-1)
+Lleuk[c("Erythrocyte","GMP"),2] <- c(1,-1)
+Lleuk[c("Erythrocyte","Megakaryocytes"),3] <- c(1,-1)
+Lleuk[c("Erythrocyte","Monocytes"),4] <- c(1,-1)
+Lleuk[c("Erythrocyte","Neutrophils"),5] <- c(1,-1)
+lrtLeuk <- glmLRT(fit,contrast=Lleuk)
+sum(p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05)
+
 
 ### gene set enrichment
 ## use data from https://www.sciencedirect.com/science/article/pii/S221367111630131X?via%3Dihub#app3 to perform specific GSEA
@@ -259,11 +313,16 @@ names(ranksTradeR) <- rownames(waldEndResPaul)
 gseaTrader <- fgsea(gsList, ranksTradeR, nperm=1e4, minSize=5)
 gseaTrader
 
-pvalBeam <- rank(BEAM_res$pval)
+pvalBeam <- BEAM_res$pval
 names(pvalBeam) <- rownames(BEAM_res)
 ranksBEAM <- rank(pvalBeam)
 gseaBEAM <- fgsea(gsList, ranksBEAM, nperm=1e4, minSize=5)
 gseaBEAM
+
+ranksEdgeR <- rank(lrtLeuk$table$LR)
+names(ranksEdgeR) <- rownames(lrtLeuk$table)
+gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e4, minSize=5)
+gseaEdgeR
 
 ## GSEA for erythrocytes is significant for tradeR, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
 
@@ -419,3 +478,91 @@ for(xx in 1:6){
   }
 }
 dev.off()
+
+
+############################################
+#### cluster-based vs continuous DE #######
+############################################
+# clusters contain a mixture of cell types
+table(phenoData(cds)$cell_type2,cl[sampleNames(phenoData(cds))])
+# this leads to high within-cluster variability
+# edgeR
+library(edgeR)
+d <- DGEList(exprs(cds))
+d <- calcNormFactors(d)
+cl <- as.factor(cl)
+cl <- relevel(cl,ref=4) #set progenitor as ref
+design <- model.matrix(~cl)
+d <- estimateDisp(d, design)
+plotBCV(d)
+fit <- glmFit(d, design)
+
+# plot clusters
+plot(rd,col=gcolpal[cl], main="color by cluster", xlab="UMAP1", ylab="UMAP2", pch=16) ; legend("topright",as.character(1:7),col=gcolpal[1:7], pch=16)
+lines(crv, lwd=2)
+
+# check for association in leukocyte lineage by cluster-based DE
+#leukocyte clusters: 4 6 3 5 7
+Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=10)
+rownames(Lleuk) <- colnames(fit$coefficients)
+Lleuk["cl6",1] <- 1
+Lleuk["cl3",2] <- 1
+Lleuk["cl5",3] <- 1
+Lleuk["cl7",4] <- 1
+Lleuk[c("cl6","cl3"),5] <- c(1,-1)
+Lleuk[c("cl6","cl5"),6] <- c(1,-1)
+Lleuk[c("cl6","cl7"),7] <- c(1,-1)
+Lleuk[c("cl3","cl5"),8] <- c(1,-1)
+Lleuk[c("cl3","cl7"),9] <- c(1,-1)
+Lleuk[c("cl5","cl7"),10] <- c(1,-1)
+
+lrtLeuk <- glmLRT(fit,contrast=Lleuk)
+
+### genes identified with tradeR but not with edgeR
+deEdgeRLeuk <- rownames(lrtLeuk)[p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05]
+nullEdgeRLeuk <- rownames(lrtLeuk)[!rownames(lrtLeuk)%in%deEdgeRLeuk]
+
+#pSmoothTradeR <- getSmootherPvalues(gamListPaul)
+#statSmoothTradeR <- getSmootherTestStats(gamListPaul)
+pSmoothTradeRIct <- getSmootherPvalues(gamListPaulIct)
+statSmoothTradeRIct <- getSmootherTestStats(gamListPaulIct)
+deTradeRLeuk <- rownames(pSmoothTradeRIct)[p.adjust(pSmoothTradeRIct[,1],"fdr")<=0.05]
+
+onlyTraderLeuk <- deTradeRLeuk[!deTradeRLeuk%in%deEdgeRLeuk]
+
+i=0
+
+mypar(mfrow=c(1,4))
+i=i+1 ; plotSmoothers(gamListPaul[[onlyTraderLeuk[i]]]) ; plot(gamListPaul[[onlyTraderLeuk[i]]]) ; plotGeneCount(counts=counts, curve=crv, gene=onlyTraderLeuk[i], rd=rd) ; onlyTraderLeuk[i]
+
+write.table(onlyTraderLeuk,file="~/onlyTraderLeuk.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+
+# i=2, 64: gene with all-zero that's significantly associated with the lineage...
+
+# "4930486L24Rik" has nearly all zero but still very high test statistics in smoother association
+# things like gene Grhpr should not be significant in a smoothe association. are they significant because the mean of the smoother differs from the overall mean?
+
+# interesting: i=98 (Clec10a),
+
+# erythrocyte lineage
+#erythrocyte clusters: 4 2 1
+Ler <- matrix(0,nrow=ncol(fit$coefficients), ncol=3)
+rownames(Ler) <- colnames(fit$coefficients)
+Ler["cl2",1] <- 1
+Ler["cl1",2] <- 1
+Ler[c("cl2","cl1"),3] <- c(1,-1)
+lrtEr <- glmLRT(fit,contrast=Ler)
+deEdgeREr <- rownames(lrtEr)[p.adjust(lrtEr$table$PValue,"fdr")<=0.05]
+deTradeREr <- rownames(pSmoothTradeRIct)[p.adjust(pSmoothTradeRIct[,2],"fdr")<=0.05]
+onlyTraderEr <- deTradeREr[!deTradeREr%in%deEdgeREr]
+onlyTraderEr <- onlyTraderEr[order(statSmoothTradeRIct[onlyTraderEr,2], decreasing=TRUE)]
+
+
+
+i=0
+
+mypar(mfrow=c(1,4))
+i=i+1 ; plotSmoothers(gamListPaul[[onlyTraderEr[i]]]) ; plot(gamListPaul[[onlyTraderEr[i]]]) ; plotGeneCount(counts=counts, curve=crv, gene=onlyTraderEr[i], rd=rd) ; onlyTraderEr[i]
+
+write.table(onlyTraderEr,file="~/onlyTraderEr.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
