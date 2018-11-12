@@ -115,7 +115,7 @@ counts=exprs(cds)
 #gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), Verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
-waldEndResPaul <- endPointTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
+waldEndResPaul <- diffEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
 sum(p.adjust(waldEndResPaul$pvalue,"fdr")<=0.05)
 endGenes <- rownames(counts)[which(p.adjust(waldEndResPaul$pvalue,"fdr")<=0.05)]
 # pattern test: 2425 genes
@@ -123,7 +123,7 @@ patternResPaul <- patternTest(gamListPaul)
 sum(p.adjust(patternResPaul$pvalue,"fdr")<=0.05, na.rm=TRUE)
 patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue,"fdr")<=0.05)]
 # start point test: 2015 genes
-waldStartResPaul <- startPointTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
+waldStartResPaul <- startVsEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
 sum(p.adjust(waldStartResPaul$pvalue,"fdr")<=0.05)
 startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue,"fdr")<=0.05)]
 

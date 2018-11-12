@@ -97,7 +97,7 @@ for(ii in 1:nlevels(clus.labels)){
 weightByClusterVec <- do.call(c,weightByCluster)
 clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
 weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch")
+boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch", xlab="Cluster", ylab="Weight")
 #boxplot batch
 weightByCluster <- list()
 for(ii in 1:nlevels(clus.labels)){
@@ -106,9 +106,10 @@ for(ii in 1:nlevels(clus.labels)){
 }
 weightByClusterVec <- do.call(c,weightByCluster)
 clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
-weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-boxplot(weight~clusLabel,data=weightDat, main="~batch")
+weightDatClust <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
+boxplot(weight~clusLabel,data=weightDatClust, main="~batch", xlab="Cluster", ylab="Weight")
 ### set real cluster names instead of numbers
+
 
 ### plot number of zeros per cluster as well
 ```
@@ -421,7 +422,7 @@ dev.off()
 # Check for HBC markers
 
 ```{r}
-startRes <- startPointTest(gamList)
+startRes <- startVsEndTest(gamList)
 top250Genes <- rownames(head(startRes[order(startRes$waldStat, decreasing=TRUE),],250))
 write.table(top250Genes, file="~/startTestOETop250.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
 # submit to http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp for top 20 gene sets
