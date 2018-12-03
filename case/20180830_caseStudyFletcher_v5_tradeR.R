@@ -385,6 +385,17 @@ plotSmoothersIk <- function(m, nPoints = 100, ...){
          lty = 1, lwd = 2, bty = "n", cex = 2 / 3)
 }
 
+# for talk
+png("~/Dropbox/PhD/seminars/presentations/zinbwaveTradeR/Janssen/patternGenesFletcher.png",width=8,height=5,units="in",res=330)
+mypar(mfrow=c(2,2))
+i=0
+while(i<4){
+  i=i+1
+  plotSmoothersIk(gamList[[o[i]]], main=rownames(resPat)[o][i])
+}
+dev.off()
+
+
 
 
 #par(mfrow=c(1,2))
