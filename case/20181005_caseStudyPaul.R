@@ -278,11 +278,11 @@ fit <- glmFit(d, design)
 #erythrocyte clusters: 4 2 1
 Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=5)
 rownames(Lleuk) <- colnames(fit$coefficients)
-Lleuk[c("Erythrocyte","Basophils"),1] <- c(1,-1)
-Lleuk[c("Erythrocyte","GMP"),2] <- c(1,-1)
-Lleuk[c("Erythrocyte","Megakaryocytes"),3] <- c(1,-1)
-Lleuk[c("Erythrocyte","Monocytes"),4] <- c(1,-1)
-Lleuk[c("Erythrocyte","Neutrophils"),5] <- c(1,-1)
+Lleuk[c("ctErythrocyte","ctBasophils"),1] <- c(1,-1)
+Lleuk[c("ctErythrocyte","ctGMP"),2] <- c(1,-1)
+Lleuk[c("ctErythrocyte","ctMegakaryocytes"),3] <- c(1,-1)
+Lleuk[c("ctErythrocyte","ctMonocytes"),4] <- c(1,-1)
+Lleuk[c("ctErythrocyte","ctNeutrophils"),5] <- c(1,-1)
 lrtLeuk <- glmLRT(fit,contrast=Lleuk)
 sum(p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05)
 
@@ -310,7 +310,7 @@ names(gsList) <- unique(gs$Lineage)
 library(fgsea)
 ranksTradeR <- rank(waldEndResPaul$waldStat)
 names(ranksTradeR) <- rownames(waldEndResPaul)
-gseaTrader <- fgsea(gsList, ranksTradeR, nperm=1e4, minSize=5)
+gseaTrader <- fgsea(gsList, ranksTradeR, nperm=1e5, minSize=5)
 gseaTrader
 
 pvalBeam <- BEAM_res$pval
@@ -321,7 +321,7 @@ gseaBEAM
 
 ranksEdgeR <- rank(lrtLeuk$table$LR)
 names(ranksEdgeR) <- rownames(lrtLeuk$table)
-gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e4, minSize=5)
+gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e5, minSize=5)
 gseaEdgeR
 
 ## GSEA for erythrocytes is significant for tradeR, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
