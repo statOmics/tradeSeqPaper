@@ -84,30 +84,30 @@ core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = cl
 load("~/zinbFletcher.rda")
 weights <- computeObservationalWeights(zinb_c, countsFiltered)
 #weightsNoCluster <- computeObservationalWeights(zinb_c_noCluster, countsFiltered)
-
-mypar(mfrow=c(2,2))
-hist(weights[countsFiltered==0], ylim=c(0,3.5e6), main="~cluster+batch", xlab="Weight")
-hist(weightsNoCluster[countsFiltered==0], ylim=c(0,3.5e6), main="~batch", xlab="Weight")
-#boxplot cluster+batch
-weightByCluster <- list()
-for(ii in 1:nlevels(clus.labels)){
-  id <- which(clus.labels==levels(clus.labels)[ii])
-  weightByCluster[[ii]] <- weights[,id][which(countsFiltered[,id]==0)]
-}
-weightByClusterVec <- do.call(c,weightByCluster)
-clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
-weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch", xlab="Cluster", ylab="Weight")
-#boxplot batch
-weightByCluster <- list()
-for(ii in 1:nlevels(clus.labels)){
-  id <- which(clus.labels==levels(clus.labels)[ii])
-  weightByCluster[[ii]] <- weightsNoCluster[,id][which(countsFiltered[,id]==0)]
-}
-weightByClusterVec <- do.call(c,weightByCluster)
-clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
-weightDatClust <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-boxplot(weight~clusLabel,data=weightDatClust, main="~batch", xlab="Cluster", ylab="Weight")
+#
+# mypar(mfrow=c(2,2))
+# hist(weights[countsFiltered==0], ylim=c(0,3.5e6), main="~cluster+batch", xlab="Weight")
+# hist(weightsNoCluster[countsFiltered==0], ylim=c(0,3.5e6), main="~batch", xlab="Weight")
+# #boxplot cluster+batch
+# weightByCluster <- list()
+# for(ii in 1:nlevels(clus.labels)){
+#   id <- which(clus.labels==levels(clus.labels)[ii])
+#   weightByCluster[[ii]] <- weights[,id][which(countsFiltered[,id]==0)]
+# }
+# weightByClusterVec <- do.call(c,weightByCluster)
+# clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
+# weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
+# boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch", xlab="Cluster", ylab="Weight")
+# #boxplot batch
+# weightByCluster <- list()
+# for(ii in 1:nlevels(clus.labels)){
+#   id <- which(clus.labels==levels(clus.labels)[ii])
+#   weightByCluster[[ii]] <- weightsNoCluster[,id][which(countsFiltered[,id]==0)]
+# }
+# weightByClusterVec <- do.call(c,weightByCluster)
+# clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
+# weightDatClust <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
+# boxplot(weight~clusLabel,data=weightDatClust, main="~batch", xlab="Cluster", ylab="Weight")
 ### set real cluster names instead of numbers
 
 
@@ -131,7 +131,7 @@ load("~/gamListOE_tradeR.rda")
 ```{r}
 ### ERROR: model 2548 gives negative variance for the lineage 1 - lineage 2 contrast. how come?
 
-endTestGam <- endPointTest(gamList, omnibus=TRUE, pairwise=TRUE)
+endTestGam <- diffEndTest(gamList, omnibus=TRUE, pairwise=TRUE)
 endOmnibusPval <- endTestGam$pvalue
 sum(is.na(endOmnibusPval)) #genes we could not fit or test.
 endOmnibusPadj <- p.adjust(endOmnibusPval,"fdr")
@@ -164,6 +164,7 @@ lrt <- zinbwave::glmWeightedF(fit,contrast=L)
 deGenesEdgeR <- which(p.adjust(lrt$table$PValue,"fdr")<=0.05)
 length(deGenesEdgeR)
 mean(deGenesEdgeR%in%deGenesEndGam)
+hist(lrt$table$PValue)
 ```
 
 # compare analyses
@@ -202,6 +203,31 @@ while(i<10){
   i=i+1
   plotSmoothers(gamList[[uniqueEdgeREndId[i]]])
 }
+```
+
+# are unique GAM genes relevant?
+
+```{r}
+uniqGamEndFletcher <- rownames(countsFiltered)[uniqueGamEndId]
+write.table(uniqGamEndFletcher, file="~/uniqGamEndFletcher.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+# submit to http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp for top 20 gene sets
+overlapUniqEndGam=readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/case/fletcher/overlapUniqGamEndFletcher")
+overlapSets <- overlapUniqEndGam[10:30]
+overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x,split="\t"))
+gsNames <- unname(unlist(lapply(overlapSetsSplit,"[[",1)))
+genesInSet <- unname(unlist(lapply(overlapSetsSplit,"[[",2)))
+genesInOverlap <- unname(unlist(lapply(overlapSetsSplit,"[[",4)))
+qval <- unname(unlist(lapply(overlapSetsSplit,"[[",7)))
+gsNames <- tolower(gsNames)
+gsNames <- gsub(x=gsNames,pattern="_",replacement=" ")
+gsNames[-1] <- unname(sapply(gsNames[-1],function(x) substr(x,4,nchar(x))))
+tab <- data.frame(geneSet=gsNames[-1],
+                    overlap=genesInOverlap[-1],
+                  genesInSet=genesInSet[-1],
+                  qvalue=qval[-1])
+library(xtable)
+xtable(tab)
+
 ```
 
 
@@ -585,7 +611,86 @@ for(i in 1:15) lines(x=1:nrow(countsFiltered), y=sumFoundMat[,i], col=alpha(colo
 # 1, 6, 11 are performing best. Note that all of these involve a comparison of the INP1 cluster with the three other SUS clusters. Hence, it is this cluster that matters; the differences are local and this is thus probably not a good example.
 ```
 
+#### early DE test
 
+
+```{r}
+early24 <- earlyDETest(gamList, knots=c(2,4), nPoints=50, omnibus=TRUE, pairwise=TRUE)
+library(stageR)
+pScreen <- early24$pvalue
+names(pScreen) <- rownames(countsFiltered)
+pConfirmation <- cbind(early24$pvalue_1vs2, early24$pvalue_1vs3, early24$pvalue_2vs3)
+rownames(pConfirmation) <- rownames(countsFiltered)
+colnames(pConfirmation) <- c("1v2", "1v3", "2v3")
+stageRObj <- stageR(pScreen=pScreen, pConfirmation=pConfirmation, pScreenAdjusted=FALSE)
+stageRObj <- stageWiseAdjustment(stageRObj, method="holm", alpha=0.05, allowNA=TRUE)
+res <- getResults(stageRObj)
+sigAll24 <- names(which(rowSums(res)==4))
+# most of these genes seem to be very relevant.
+# https://www.genecards.org/cgi-bin/carddisp.pl?gene=FREM1
+# Cenpf and Cdca8 are about cell cycle
+
+plotSmoothersIk <- function(m, nPoints = 100, ...){
+  data <- m$model
+  y <- data$y
+  #construct time variable based on cell assignments.
+  nCurves <- length(m$smooth)
+  timeAll <- c()
+  col <- c()
+  for (jj in seq_len(nCurves)) {
+    for (ii in 1:nrow(data)) {
+      if (data[ii, paste0("l", jj)] == 1) {
+        timeAll[ii] <- data[ii, paste0("t", jj)]
+        col[ii] <- jj
+      } else {
+        next
+      }
+    }
+  }
+
+  # plot raw data
+    #cols <- c("#E7298A", "#FF7F00", "#1F78B4")
+    cols <- c("#FF7F00", "#1F78B4", "#E7298A")
+  plot(x = timeAll, y = log(y + 1), col = alpha(cols[col],2/3), pch = 16, cex = 2 / 3,
+       ylab = "log(count + 1)", xlab = "Pseudotime", ...)
+
+  #predict and plot smoothers across the range
+  for (jj in seq_len(nCurves)) {
+    df <- .getPredictRangeDf(m, jj, nPoints = nPoints)
+  yhat <- predict(m, newdata = df, type = "response")
+  lines(x = df[, paste0("t", jj)], y = log(yhat + 1), col = cols[jj], lwd = 2)
+  }
+  # knots
+    abline(v=gamList[[1]]$smooth[[1]]$xp[2], lty=2, col="black", lwd=1.5)
+    abline(v=gamList[[1]]$smooth[[1]]$xp[4], lty=2, col="black", lwd=1.5)
+  legend("topleft", c("Neuronal", "Microvillous", "Sustentacular"),col = cols,
+         lty = 1, lwd = 2, bty = "n", cex = 4 / 5)
+}
+library(scales)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE24SignGenesInAll.png", width=9, height=7, units="in", res=200)
+rafalib::mypar(mfrow=c(3,3), bty='l')
+for(ii in 1:9){
+  plotSmoothersIk(gamList[[sigAll24[ii]]], ylim=c(0,10), main=sigAll24[ii])
+
+}
+dev.off()
+
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE24SignGenesInAll_allGenes.png", width=9, height=7, units="in", res=200)
+rafalib::mypar(mfrow=c(4,4), bty='l')
+for(ii in 1:length(sigAll24)){
+  plotSmoothersIk(gamList[[sigAll24[ii]]], ylim=c(0,10), main=sigAll24[ii])
+
+}
+dev.off()
+
+
+# neuronal vs sus lineage
+sum(p.adjust(early24$pvalue_1vs3,"fdr")<=0.05,na.rm=TRUE) #588 genes
+# microvillous vs sus lineage
+sum(p.adjust(early24$pvalue_2vs3,"fdr")<=0.05,na.rm=TRUE) #452 genes
+# neuronal vs microvillous lineage
+sum(p.adjust(early24$pvalue_1vs2,"fdr")<=0.05,na.rm=TRUE) #258 genes
+```
 
 
 

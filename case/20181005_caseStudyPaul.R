@@ -112,7 +112,7 @@ lines(crv, lwd=2)
 library(mgcv)
 library(tradeR)
 counts=exprs(cds)
-#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), Verbose=TRUE)
+#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
 waldEndResPaul <- diffEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
@@ -226,6 +226,37 @@ plot_cell_trajectory(cds2, color_by = "State")
 BEAM_res <- BEAM(cds2,  cores = 1)
 sum(BEAM_res$qval<0.05)
 #save(BEAM_res,file="~/BEAM_resMonocleOldPaulEtal.rda")
+
+
+### get ICA coordinates and slingshot for plot
+library(dplyr)
+x=1
+y=2
+theta=0
+S_matrixICA <- reducedDimS(cds2)
+plot(t(S_matrixICA[1:2,]), col=cell_type_color[phenoData(cds2)$cell_type2], pch=16)
+
+### slingshot
+library(RColorBrewer)
+gcolpal <- c(brewer.pal(8,"Dark2")[-c(2,3,5)],brewer.pal(12,"Paired")[c(1,2,8,10,9)],brewer.pal(12,"Set3")[c(7,8,12)], brewer.pal(8, "Pastel2")[8], brewer.pal(11,"BrBG")[11], brewer.pal(11,"PiYG")[1], "cyan", "darkblue","darkorchid2", "brown1", "springgreen1", "deepskyblue4", "darkolivegreen","antiquewhite2")
+
+set.seed(97)
+data_df <- t(S_matrixICA[1:2,])
+rdICA <- data_df
+clICA <- kmeans(rdICA, centers = 7)$cluster
+plot(rdICA, col = brewer.pal(9,"Set1")[clICA], pch=16, asp = 1) ; legend("bottomright", as.character(1:7), col=brewer.pal(9,"Set1")[1:7], pch=16, bty="n", cex=2/3)
+library(slingshot)
+linICA <- getLineages(rdICA, clusterLabels=clICA, start.clus=4)
+plot(rdICA,col=gcolpal[clICA], xlab="ICA1", ylab="ICA2")
+lines(linICA, lwd=2)
+crvICA <- getCurves(linICA)
+plot(rdICA,ICAcol=gcolpal[clICA], main="color by cluster", xlab="ICA1", ylab="ICA2")
+lines(crvICA, lwd=2)
+plot(rdICA,col=cell_type_color[phenoData(cds2)$cell_type2], main="color by cell type", xlab="ICA1", ylab="ICA2", pch=16)
+lines(crvICA, lwd=2)
+
+
+
 
 # plot_cell_trajectory(cds, color_by = "State")
 # cds <- orderCells(cds, root_state=3 , num_paths=2)
@@ -425,7 +456,7 @@ plotSmoothersIk <- function(m, nPoints = 100, ...){
 
   # plot raw data
   plot(x = timeAll, y = log(y + 1), col = alpha(col,.5), pch = 16, cex = 1 / 3,
-       ylab = " log(expression + 1)", xlab = "Pseudotime", ...)
+       ylab = " log(count + 1)", xlab = "Pseudotime", ...)
 
   #predict and plot smoothers across the range
   for (jj in seq_len(nCurves)) {
@@ -439,37 +470,59 @@ plotSmoothersIk <- function(m, nPoints = 100, ...){
 
 ###### figure for paper
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul.png", width=9, height=6, units="in", res=200)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul_v2.png", width=9, height=6, units="in", res=200)
 rafalib::mypar()
-layout(matrix(c(1,1, 2,3, 8,9,
-              1,1, 4,5, 10,11,
-              1,1, 6,7, 12,13), nrow=3, ncol=6, byrow=TRUE))
+# layout(matrix(c(1,1, 2,3, 8,9,
+#               1,1, 4,5, 10,11,
+#               1,1, 6,7, 12,13), nrow=3, ncol=6, byrow=TRUE))
+layout(matrix(c(1,1, 3,4, 9,10,
+                1,1, 3,4, 9,10,
+                1,1, 5,6, 11,12,
+                2,2, 5,6, 11,12,
+                2,2, 7,8, 13,14,
+                2,2, 7,8, 13,14), nrow=6, ncol=6, byrow=TRUE))
 par(cex.lab=1.25, cex.axis=1.1)
-### panel A: trajectory with cell types
+
+### panel A: ICA trajectory with cell types
+plot(rdICA, col=alpha(cell_type_color[phenoData(cds)$cell_type2],.8), pch=16, xlab="ICA1", ylab="ICA2")
+lines(crvICA@curves$curve1$s[order(crvICA@curves$curve1$lambda),], col="orange", lwd=4)
+lines(crvICA@curves$curve2$s[order(crvICA@curves$curve2$lambda),], col="darkseagreen3", lwd=4)
+legend("topright", unique(phenoData(cds)$cell_type2),
+       col = cell_type_color[unique(phenoData(cds)$cell_type2)],
+       pch = 16, cex = 4/5, bty = "n")
+legend("bottomright", c("Leukocyte lineage", "Erythrocyte lineage"),
+       col = c("orange", "darkseagreen3"),
+      lwd=3, lty=1, bty = "n", cex=4/5)
+mtext("a", at=-13, font=2, cex=4/3)
+
+### panel B: UMAP trajectory with cell types
 plot(rd,col=alpha(cell_type_color[phenoData(cds)$cell_type2],.8), pch=16, xlab="UMAP1", ylab="UMAP2")
 lines(crv@curves$curve1$s[order(crv@curves$curve1$lambda),], col="orange", lwd=4)
 lines(crv@curves$curve2$s[order(crv@curves$curve2$lambda),], col="darkseagreen3", lwd=4)
 legend("topright", unique(phenoData(cds)$cell_type2),
        col = cell_type_color[unique(phenoData(cds)$cell_type2)],
-       pch = 16, cex = 1, bty = "n")
-mtext("a", at=-0.14, font=2, cex=4/3)
+       pch = 16, cex = 4/5, bty = "n")
+legend("bottomleft", c("Leukocyte lineage", "Erythrocyte lineage"),
+       col = c("orange", "darkseagreen3"),
+      lwd=3, lty=1, bty = "n", cex=4/5)
+mtext("b", at=-0.21, font=2, cex=4/3)
 
-### panel B: four interesting genes involved in heamatopoiesis.
+### panel C: four interesting genes involved in heamatopoiesis.
 palette(c("orange","darkseagreen3"))
 plotSmoothersIk(gamListPaul[["Prtn3"]], main="Prtn3")
-mtext("b", at=-0.5, font=2, cex=4/3)
-plotSmoothersIk(gamListPaul[["Mpo"]], main="Mpo")
-plotSmoothersIk(gamListPaul[["Car2"]], main="Car2")
-plotSmoothersIk(gamListPaul[["Ctsg"]], main="Ctsg")
-plotSmoothersIk(gamListPaul[["Elane"]], main="Elane")
-plotSmoothersIk(gamListPaul[["Car1"]], main="Car1")
+mtext("c", at=-0.5, font=2, cex=4/3)
+plotSmoothersIk(gamListPaul[["Mpo"]], main="Mpo", ylim=c(0,5))
+plotSmoothersIk(gamListPaul[["Car2"]], main="Car2", ylim=c(0,5))
+plotSmoothersIk(gamListPaul[["Ctsg"]], main="Ctsg", ylim=c(0,5))
+plotSmoothersIk(gamListPaul[["Elane"]], main="Elane", ylim=c(0,5))
+plotSmoothersIk(gamListPaul[["Car1"]], main="Car1", ylim=c(0,5))
 
-### panel C: clusters of gene families
+### panel D: clusters of gene families
 #mypar(mfrow=c(3,2), bty='l')
 for(xx in 1:6){
   cId <- which(clusterLabels==xx)
-  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Normalized expression")
-  if(xx==1) mtext("c", at=-40, font=2, cex=4/3)
+  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Normalized expression", ylim=c(-3,2.5))
+  if(xx==1) mtext("d", at=-40, font=2, cex=4/3)
   for(ii in 1:length(cId)){
     geneId <- rownames(yhatPatScaled)[cId[ii]]
     yhatGene <- yhatPatScaled[geneId,]
