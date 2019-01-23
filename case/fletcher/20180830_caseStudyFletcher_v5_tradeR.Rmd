@@ -122,11 +122,9 @@ load("~/gamListOE_tradeR.rda")
 ```
 
 
-#####################################
-### BETWEEN LINEAGE COMPARISONS #####
-#####################################
+# BETWEEN LINEAGE COMPARISONS
 
-# Comparing the expression at the differentiated cell type
+## Comparing the expression at the differentiated cell type
 
 ```{r}
 ### ERROR: model 2548 gives negative variance for the lineage 1 - lineage 2 contrast. how come?
@@ -291,7 +289,9 @@ log(fitted(gamList[[1]])+.1)
 
 
 
-###### within lineage comparisons
+# within lineage comparisons
+
+### cell cycle patterns within lineages: edgeR
 
 ```{r cellCycleWithin}
 plot(x=levels(clus.labels), pch=16, col=colpal)
@@ -342,28 +342,39 @@ o <- order(fisherP)
 sumFoundFisher <- sapply(1:nrow(countsFiltered), function(ii){
   sum(cellGenes$MGI.Gene.Marker.ID %in% names(fisherP[o])[1:ii])
 })
+```
 
-smootherStats <- getSmootherTestStats(gamList)
-o <- order(smootherStats[,1], decreasing=TRUE)
-sumFoundPat <- sapply(1:nrow(countsFiltered), function(ii){
-  sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(smootherStats[o,])[1:ii])
-})
+### cell cycle patterns within lineages: tradeR
 
+```{r}
+assocRes <- associationTest(gamList, omnibus=TRUE, lineages=TRUE)
+deAssoc1 <- rownames(assocRes)[p.adjust(assocRes$pvalue_1,"fdr")<=0.05]
+deAssoc1 <- deAssoc1[!is.na(deAssoc1)]
+length(deAssoc1) #1931 DE genes
 
-#in top 1000 genes we find 394 cell cycle genes
-sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(smootherStats[o,])[1:1000])
+cellGenes=read.table("~/Downloads/GO_term_summary_20181001_091947.txt", header=TRUE, sep="\t", row.names=NULL)
+cellGenes$MGI.Gene.Marker.ID <- as.character(cellGenes$MGI.Gene.Marker.ID)
+cellGenes <- cellGenes[cellGenes$MGI.Gene.Marker.ID%in%rownames(countsFiltered),]
 # out of a total of 2889 genes present in filtered dataset
-sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(smootherStats))
+sum(cellGenes$MGI.Gene.Marker.ID %in% deAssoc1)
 
 # make enrichment plot
+# how many cell cycle genes were discovered along ordering of significance?
+o <- order(assocRes$waldStat_1, decreasing=TRUE)
+sumFoundCC <- sapply(1:nrow(assocRes), function(ii){
+  sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(assocRes)[o[1:ii]], na.rm=TRUE)
+})
+# how many do we expect by chance?
+sumFoundRandom <- (nrow(cellGenes)/nrow(assocRes)) * (1:nrow(assocRes))
 # absolute
-plot(x=1:nrow(smootherStats), y=sumFoundPat, type="l")
-lines(x=1:nrow(smootherStats), y=(2889/nrow(smootherStats))*(1:nrow(smootherStats)), type="l", col="steelblue")
+plot(x=1:nrow(assocRes), y=sumFoundCC, type="l")
+lines(x=1:nrow(assocRes), y=(2889/nrow(assocRes))*(1:nrow(assocRes)), type="l", col="steelblue")
 expRandom <- (2889/nrow(smootherStats))*(1:nrow(smootherStats))
 # relative
-plot(x=1:nrow(smootherStats), y=sumFoundPat/expRandom, type="l", ylab="# genes found with tradeR / # genes found under random selection")
+plot(x=1:nrow(assocRes), y=sumFoundCC/sumFoundRandom, type="l", ylab="# genes found with tradeR / # genes found under random selection")
 abline(h=1, lty=2, col="red")
 
+clusAssoc1 <- clusterExpressionPatterns(gamList, nPoints=60, genes=deAssoc1)
 
 
 #library(scales)
