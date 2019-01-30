@@ -112,7 +112,7 @@ lines(crv, lwd=2)
 library(mgcv)
 library(tradeR)
 counts=exprs(cds)
-#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
+gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
 waldEndResPaul <- diffEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
@@ -317,6 +317,9 @@ Lleuk[c("ctErythrocyte","ctNeutrophils"),5] <- c(1,-1)
 lrtLeuk <- glmLRT(fit,contrast=Lleuk)
 sum(p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05)
 
+## neutrophil vs erythrocytes is most analogous to diffEndTest.
+lrtLeukNeutEry <- glmLRT(fit,contrast=Lleuk[,5])
+
 
 ### gene set enrichment
 ## use data from https://www.sciencedirect.com/science/article/pii/S221367111630131X?via%3Dihub#app3 to perform specific GSEA
@@ -350,10 +353,21 @@ ranksBEAM <- rank(pvalBeam)
 gseaBEAM <- fgsea(gsList, ranksBEAM, nperm=1e4, minSize=5)
 gseaBEAM
 
+# edgeR omnibus test
 ranksEdgeR <- rank(lrtLeuk$table$LR)
 names(ranksEdgeR) <- rownames(lrtLeuk$table)
 gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e5, minSize=5)
 gseaEdgeR
+
+# edgeR neutrophil vs erythrocyte
+ranksEdgeR <- rank(lrtLeukNeutEry$table$LR)
+names(ranksEdgeR) <- rownames(lrtLeukNeutEry$table)
+gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e5, minSize=5)
+gseaEdgeR
+
+
+
+
 
 ## GSEA for erythrocytes is significant for tradeR, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
 
@@ -521,7 +535,7 @@ plotSmoothersIk(gamListPaul[["Car1"]], main="Car1", ylim=c(0,5))
 #mypar(mfrow=c(3,2), bty='l')
 for(xx in 1:6){
   cId <- which(clusterLabels==xx)
-  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Normalized expression", ylim=c(-3,2.5))
+  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Standardized log(count + 1)", ylim=c(-3,2.5))
   if(xx==1) mtext("d", at=-40, font=2, cex=4/3)
   for(ii in 1:length(cId)){
     geneId <- rownames(yhatPatScaled)[cId[ii]]
