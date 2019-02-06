@@ -286,9 +286,6 @@ log(fitted(gamList[[1]])+.1)
 ```
 
 
-
-
-
 # within lineage comparisons
 
 ### cell cycle patterns within lineages: edgeR
@@ -374,9 +371,16 @@ expRandom <- (2889/nrow(smootherStats))*(1:nrow(smootherStats))
 plot(x=1:nrow(assocRes), y=sumFoundCC/sumFoundRandom, type="l", ylab="# genes found with tradeR / # genes found under random selection")
 abline(h=1, lty=2, col="red")
 
+
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/cellCycleFletcher.png", width=7, height=7, units="in", res=200)
+plot(x=1:nrow(assocRes), y=sumFoundCC/sumFoundRandom, type="l", ylab="# genes found with tradeR / # genes found under random selection", bty='n', xlab="Gene list ordered according to significance", col='darkgray', lwd=1.5)
+abline(h=1, lty=2, col="red")
+dev.off()
+
+
+
 o1 <- order(assocRes[deAssoc1,"waldStat_1"], decreasing=TRUE)
 top200Assoc <- deAssoc1[o1[1:200]]
-#clusAssoc1 <- clusterExpressionPatterns(gamList, nPoints=20, genes=top200Assoc, ncores=2)
 
 # heatmap for neuronal lineage.
 source("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeR/R/utils.R")
@@ -393,19 +397,19 @@ df$cols <- NA
 df$ct[df$t1<80] <- "HBC"
 df$cols[df$t1<80] <- colpal[1]
 df$ct[df$t1>=80 & df$t1<115] <- "HBC*"
-df$cols[df$t1>=80 & df$t1<115] <- colpal[7]
+df$cols[df$t1>=80 & df$t1<115] <- colpal[3]
 df$ct[df$t1>=115 & df$t1<220] <- "GBC"
-df$cols[df$t1>=115 & df$t1<220] <- colpal[5]
+df$cols[df$t1>=115 & df$t1<220] <- colpal[17]
 df$ct[df$t1>=220 & df$t1<250] <- "INP1"
-df$cols[df$t1>=220 & df$t1<250] <- colpal[2]
+df$cols[df$t1>=220 & df$t1<250] <- colpal[24]
 df$ct[df$t1>=250 & df$t1<310] <- "INP2"
-df$cols[df$t1>=250 & df$t1<310] <- colpal[12]
+df$cols[df$t1>=250 & df$t1<310] <- colpal[4]
 df$ct[df$t1>=310 & df$t1<325] <- "INP3"
-df$cols[df$t1>=310 & df$t1<325] <- colpal[9]
+df$cols[df$t1>=310 & df$t1<325] <- colpal[19]
 df$ct[df$t1>=325 & df$t1<385] <- "iOSN"
-df$cols[df$t1>=325 & df$t1<385] <- colpal[8]
+df$cols[df$t1>=325 & df$t1<385] <- colpal[13]
 df$ct[df$t1>=385] <- "mOSN"
-df$cols[df$t1>=385] <- colpal[11]
+df$cols[df$t1>=385] <- colpal[8]
 
 library(pheatmap)
 annoCol <- data.frame(celltype=df$ct)
