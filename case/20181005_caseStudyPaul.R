@@ -112,7 +112,7 @@ lines(crv, lwd=2)
 library(mgcv)
 library(tradeR)
 counts=exprs(cds)
-gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
+#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
 waldEndResPaul <- diffEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
@@ -444,7 +444,19 @@ for(xx in cUniq){
   }
 }
 
-
+## for cheatsheet
+mypar(mfrow=c(2,2), mar = c(2.5, 2.8, 1.6, 1.1), cex.lab=1.8, cex.axis=1.25, cex.main=1.4)
+for(xx in 23:26){
+  cId <- which(clusterLabels==xx)
+  plot(x=seq(0,1,length=100),y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx-22), xlab="Pseudotime", ylab="Normalized expression", xaxt='n')
+  axis(1, at=c(0, 0.3, 0.6, 0.9), cex.axis=1.25, cex.lab=1.5)
+  for(ii in 1:length(cId)){
+    geneId <- rownames(yhatPatScaled)[cId[ii]]
+    yhatGene <- yhatPatScaled[geneId,]
+    lines(x=seq(0,1,length=100), y=yhatGene[1:100], col="#377EB8", lwd=2)
+    lines(x=seq(0,0.9,length=100), y=yhatGene[101:200], col="#FF7F00", lwd=2)
+  }
+}
 
 
 ## custom plot functions

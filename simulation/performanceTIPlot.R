@@ -93,7 +93,7 @@ normCounts <- FQnorm(counts)
 
 ## dim red
 pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-rd <- pca$x[,1:2]
+rd <- pca$x[,1:3]
 plot(rd, pch=16, asp = 1)
 set.seed(9)
 cl <- kmeans(rd, centers = 8)$cluster
@@ -101,7 +101,7 @@ plot(rd, col = brewer.pal(9,"Set1")[cl], pch=16, asp = 1)
 legend("topleft",legend=as.character(1:7),col=brewer.pal(9,"Set1")[1:7],pch=16,cex=2/3,bty='n')
  plot(rd, col = pal[g], pch=16, asp = 1)
 #lineages
-lin <- getLineages(rd, cl, start.clus=6, end.clus=c(4,2))
+lin <- getLineages(rd, cl, start.clus=6, end.clus=c(5,2))
 plot(rd, col = pal[g], pch=16, asp = 1)
 lines(lin,lwd=2)
 #curves
@@ -186,9 +186,9 @@ png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/we
 rafalib::mypar()
 plot(y=0:12, x=seq(0,1,length=13), type='n', bty='n', xaxt='n', yaxt='n', xlab="", ylab="")
 for(i in 1:12) polygon(x=c(0,1,1,0),y=c(0,0,1,1)+i-1,col=pal[i], density=-1, border=NA)
-mtext("True pseudotime", side=3, at=.2, padj=-2, cex=.7)
-mtext("Min", side=1, at=1, cex=.5)
-mtext("Max", side=3, at=1, cex=.5)
+mtext("True pseudotime", side=3, at=.2, padj=-2, cex=.9)
+mtext("Min", side=1, at=1, cex=.7)
+mtext("Max", side=3, at=1, cex=.7)
 dev.off()
 
 

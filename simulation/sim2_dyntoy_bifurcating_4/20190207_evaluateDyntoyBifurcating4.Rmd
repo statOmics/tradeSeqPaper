@@ -45,7 +45,7 @@ normCounts <- FQnorm(counts)
 
 ## dim red
 pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-rd <- pca$x[,1:2]
+rd <- pca$x[,1:3]
 plot(rd, pch=16, asp = 1)
 set.seed(9)
 cl <- kmeans(rd, centers = 8)$cluster
@@ -53,7 +53,7 @@ plot(rd, col = brewer.pal(9,"Set1")[cl], pch=16, asp = 1)
 legend("topleft",legend=as.character(1:7),col=brewer.pal(9,"Set1")[1:7],pch=16,cex=2/3,bty='n')
  plot(rd, col = pal[g], pch=16, asp = 1)
 #lineages
-lin <- getLineages(rd, cl, start.clus=6, end.clus=c(4,2))
+lin <- getLineages(rd, cl, start.clus=6, end.clus=c(5,2))
 plot(rd, col = pal[g], pch=16, asp = 1)
 lines(lin,lwd=2)
 #curves
@@ -295,10 +295,10 @@ score <- data.frame(GPfates=GPfatesBif$D,
 cobra <- COBRAData(pval=pval, truth=truth, score=score)
 saveRDS(cobra,"~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/cobra.rds")
 cobra <- calculate_adjp(cobra)
-# cobra <- calculate_performance(cobra, binary_truth="status")
-# cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
-# plot_roc(cobraplot)
-# plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+ cobra <- calculate_performance(cobra, binary_truth="status")
+ cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+  plot_roc(cobraplot)
+ plot_fdrtprcurve(cobraplot, pointsize=0, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
 # pAll <- plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
 # png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/performanceSim1All.png", width=7,height=6, units="in", res=300)
 # pAll
