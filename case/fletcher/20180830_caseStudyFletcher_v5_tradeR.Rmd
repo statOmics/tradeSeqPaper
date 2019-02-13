@@ -241,12 +241,16 @@ while(i<10){
 }
 
 # for paper
+source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/case/fletcher/plotSmoothersFletcher.R")
+library(scales)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/topGenesFletcherPattern.png", width=6, height=7, units='in', res=300)
 mypar(mfrow=c(3,2))
 i=0
 while(i<6){
   i=i+1
-  plotSmoothers(gamList[[o[i]]], main=rownames(resPat)[o][i])
+  plotSmoothersIk(gamList[[o[i]]], main=rownames(resPat)[o][i])
 }
+dev.off()
 
 # Stage-wise testing
 library(stageR)

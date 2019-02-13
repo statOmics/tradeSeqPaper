@@ -143,6 +143,8 @@ while(k<6){
 }
 dev.off()
 
+# 
+
 #### combine end point with pattern test
 library(tidyverse)
 compare <- inner_join(patternResPaul %>% mutate(Gene = rownames(patternResPaul),

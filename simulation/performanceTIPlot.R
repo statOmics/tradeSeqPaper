@@ -182,13 +182,13 @@ mtext("Max", side=1, at=12, cex=1)
 dev.off()
 
 
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png", width=1, height=2, units='in', res=300)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png", width=1.2, height=2, units='in', res=300)
 rafalib::mypar()
 plot(y=0:12, x=seq(0,1,length=13), type='n', bty='n', xaxt='n', yaxt='n', xlab="", ylab="")
 for(i in 1:12) polygon(x=c(0,1,1,0),y=c(0,0,1,1)+i-1,col=pal[i], density=-1, border=NA)
-mtext("True pseudotime", side=3, at=.2, padj=-2, cex=.9)
-mtext("Min", side=1, at=1, cex=.7)
-mtext("Max", side=3, at=1, cex=.7)
+mtext("True pseudotime", side=3, at=.2, padj=-1.5, cex=.9)
+mtext("Min", side=1, at=1, cex=.7, font=2)
+mtext("Max", side=3, at=1, cex=.7, font=2)
 dev.off()
 
 
