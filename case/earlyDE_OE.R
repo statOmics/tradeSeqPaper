@@ -6,11 +6,11 @@ suppressMessages(suppressWarnings(
 ))
 rm(libs)
 
-setwd("../OE")
+setwd("../../OE")
 load("data/gamListOE_tradeR.rda")
 
 path <- "https://www.cell.com/cms/10.1016/j.stem.2017.04.003/attachment/f2c195e6-972c-41e7-9e94-d4907b217a9e/mmc3"
-curl_download(path, destfile = "data/OE_DE.xlsx")
+curl_download(path, destfile = "clustering/data/OE_DE.xlsx")
 OE_DE <- readxl::read_xlsx("data/OE_DE.xlsx")[,1:8]
 
 # 1st branching ----
