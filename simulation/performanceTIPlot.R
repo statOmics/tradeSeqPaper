@@ -278,7 +278,8 @@ pAll <- ggplot(full_join(CyclePlot, DyntoyPlot),
   scale_color_manual(values = cols, breaks = names(cols)) +
   scale_linetype_manual(values = linetypes, breaks = names(linetypes))
 
-legend_all <- get_legend(pAll + theme(legend.position = "bottom"))
+legend_all <- get_legend(pAll + labs(col = "", linetype = "") + 
+                           theme(legend.position = "bottom"))
 
 ### composite plot ####
 ggCycle <- ggplot(as.data.frame(rdCycle), aes(x = PC1, y = PC2)) +
