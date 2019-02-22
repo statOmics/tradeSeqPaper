@@ -5,6 +5,8 @@ library(tradeR)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+library(ggplot2)
+library(cowplot)
 
 FQnorm <- function(counts){
   rk <- apply(counts,2,rank,ties.method='min')
@@ -35,8 +37,6 @@ rdCycle <- rd
 pccCycle <- pcc
 gCycle <- g
 library(iCOBRA)
-
-
 
 ### bifurcating dyntoy dataset
 data=readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy/20190206_dyntoyDataset.rds")
@@ -115,7 +115,9 @@ gDyngen <- g
 
 ### prepare performance plots
 library(scales)
-cols <- hue_pal()(9)
+cols = wes_palette("Darjeeling1", 9, type="continuous")
+#cols[5] <- "lightslateblue"
+cols[6] <- "dodgerblue"
 names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern", "tradeR_slingshot_assoc", "Monocle3_assoc")
 
 ## cyclic
@@ -125,6 +127,7 @@ colnames(pval(cobraCycle))[2] <- "Monocle3_assoc"
 cobraCycle <- calculate_adjp(cobraCycle)
 cobraCycle <- calculate_performance(cobraCycle, binary_truth="status")
 cobraCyclePlot <- prepare_data_for_plot(cobraCycle, colorscheme=cols[match(sort(unique(cobraCycle@roc$method)),names(cols))])
+facetted(cobraCyclePlot) <- FALSE
 pCycle <- plot_fdrtprcurve(cobraCyclePlot, pointsize=0, xaxisrange=c(0,0.5), yaxisrange=c(0.5,1)) + theme(legend.position="none") + xlab("FDP") + theme(axis.title.x = element_text(size = rel(1)), axis.title.y = element_text(size = rel(1)), axis.text.x=element_text(size=rel(.8)), axis.text.y=element_text(size=rel(.8)))
 
 ### bifurcating dyntoy
@@ -132,6 +135,7 @@ cobraDyntoy <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/tr
 cobraDyntoy <- calculate_adjp(cobraDyntoy)
 cobraDyntoy <- calculate_performance(cobraDyntoy, binary_truth="status")
 cobraDyntoyPlot <- prepare_data_for_plot(cobraDyntoy, colorscheme=cols[match(sort(unique(cobraDyntoy@roc$method)),names(cols))])
+facetted(cobraDyntoyPlot) <- FALSE
 pDyntoy <- plot_fdrtprcurve(cobraDyntoyPlot, pointsize=0, xaxisrange=c(0,0.5), yaxisrange=c(0.5,1)) + theme(legend.position="none") + xlab("FDP") + theme(axis.title.x = element_text(size = rel(1)), axis.title.y = element_text(size = rel(1)), axis.text.x=element_text(size=rel(.8)), axis.text.y=element_text(size=rel(.8)))
 
 ### bifurcating dyngen
@@ -139,6 +143,7 @@ cobraDyntoy4 <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/t
 cobraDyntoy4 <- calculate_adjp(cobraDyntoy4)
 cobraDyntoy4 <- calculate_performance(cobraDyntoy4, binary_truth="status")
 cobraDyntoy4Plot <- prepare_data_for_plot(cobraDyntoy4, colorscheme=cols[match(sort(unique(cobraDyntoy4@roc$method)),names(cols))])
+facetted(cobraDyntoy4Plot) <- FALSE
 pDyngen <- plot_fdrtprcurve(cobraDyntoy4Plot, pointsize=0, xaxisrange=c(0,0.5), yaxisrange=c(0.5,1)) + theme(legend.position="none") + xlab("FDP") + theme(axis.title.x = element_text(size = rel(1)), axis.title.y = element_text(size = rel(1)), axis.text.x=element_text(size=rel(.8)), axis.text.y=element_text(size=rel(.8)))
 
 ## make a plot with everything for legend
@@ -150,7 +155,9 @@ pvalAll <- as.data.frame(cbind(pval(cobraCycle)[1:500,], pval(cobraDyntoy)[1:500
 rownames(pvalAll) <- paste0("G",1:500)
 truthAll <- data.frame(status=c(rep(0,400),rep(1,100)))
 rownames(truthAll) <- paste0("G",1:500)
-cobraAll <- COBRAData(pval=pvalAll, truth=truthAll)
+score <- data.frame(GPfates=1:500,
+                      row.names=rownames(pvalAll))
+cobraAll <- COBRAData(pval=pvalAll, truth=truthAll, score=score)
 cobraAll <- calculate_adjp(cobraAll)
 cobraAll <- calculate_performance(cobraAll, binary_truth="status")
 cobraAllPlot <- prepare_data_for_plot(cobraAll, colorscheme=cols[match(sort(unique(cobraAll@roc$method)),names(cols))])
@@ -160,17 +167,15 @@ legend_all <- get_legend(pAll + theme(legend.position="bottom"))
 
 
 ### composite plot
-library(cowplot)
-
 ggCycle <- ggplot(as.data.frame(rdCycle), aes(x=PC1, y=PC2))
-ggCycle <- ggCycle + geom_point(col=pal[gCycle]) + theme_classic() + geom_path(x=pccCycle$s[order(pccCycle$lambda),1], y=pccCycle$s[order(pccCycle$lambda),2])
+ggCycle <- ggCycle + geom_point(col=pal[gCycle]) + theme_classic() + geom_path(x=pccCycle$s[order(pccCycle$lambda),1], y=pccCycle$s[order(pccCycle$lambda),2]) + ggtitle("Cyclic dataset") + theme(plot.title = element_text(face="bold", hjust=.5))
 
 ggDyntoy <- ggplot(as.data.frame(rdDyntoy), aes(x=PC1, y=PC2))
-ggDyntoy <- ggDyntoy + geom_point(col=pal[gDyntoy]) + theme_classic() + geom_path(x=crvDyntoy@curves$curve1$s[crvDyntoy@curves$curve1$ord,1], y=crvDyntoy@curves$curve1$s[crvDyntoy@curves$curve1$ord,2]) + geom_path(x=crvDyntoy@curves$curve2$s[crvDyntoy@curves$curve2$ord,1], y=crvDyntoy@curves$curve2$s[crvDyntoy@curves$curve2$ord,2])
+ggDyntoy <- ggDyntoy + geom_point(col=pal[gDyntoy]) + theme_classic() + geom_path(x=crvDyntoy@curves$curve1$s[crvDyntoy@curves$curve1$ord,1], y=crvDyntoy@curves$curve1$s[crvDyntoy@curves$curve1$ord,2]) + geom_path(x=crvDyntoy@curves$curve2$s[crvDyntoy@curves$curve2$ord,1], y=crvDyntoy@curves$curve2$s[crvDyntoy@curves$curve2$ord,2]) + ggtitle("Dyntoy1 dataset") + theme(plot.title = element_text(face="bold", hjust=.5))
 
 dfDyngen <- data.frame(PC1=rdDyngen[,1], PC2=rdDyngen[,2], cols=as.character(pal[gDyngen]), groups=gDyngen)
 ggDyngen <- ggplot(dfDyngen, aes(x=PC1, y=PC2))
-ggDyngen <- ggDyngen + geom_point(col=pal[gDyngen]) + theme_classic() + geom_path(x=crvDyngen@curves$curve1$s[crvDyngen@curves$curve1$ord,1], y=crvDyngen@curves$curve1$s[crvDyngen@curves$curve1$ord,2]) + geom_path(x=crvDyngen@curves$curve2$s[crvDyngen@curves$curve2$ord,1], y=crvDyngen@curves$curve2$s[crvDyngen@curves$curve2$ord,2])
+ggDyngen <- ggDyngen + geom_point(col=pal[gDyngen]) + theme_classic() + geom_path(x=crvDyngen@curves$curve1$s[crvDyngen@curves$curve1$ord,1], y=crvDyngen@curves$curve1$s[crvDyngen@curves$curve1$ord,2]) + geom_path(x=crvDyngen@curves$curve2$s[crvDyngen@curves$curve2$ord,1], y=crvDyngen@curves$curve2$s[crvDyngen@curves$curve2$ord,2]) + ggtitle("Dyntoy2 dataset") + theme(plot.title = element_text(face="bold", hjust=.5))
 
 png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendHorizontal.png", width=2, height=1, units='in', res=300)
 rafalib::mypar()
@@ -218,7 +223,8 @@ dev.off()
 p1 <- plot_grid(ggCycle,
               ggdraw() + draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png", scale=1),
             ggDyntoy,
-            ggdraw() + draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png", scale=1),
+            #ggdraw() + draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png", scale=1),
+            NULL,
           ggDyngen,
           pCycle,
           NULL,
@@ -230,6 +236,6 @@ p1 <- plot_grid(ggCycle,
       labels=c("a","","c","","e","b","","d","","f"))
 p1
 
-p2 <- plot_grid(p1,legend_all, ncol=1, rel_heights=c(1,.2))
+p2 <- plot_grid(p1,legend_all, ncol=1, rel_heights=c(1,.25))
 p2
 ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/simPerformance.pdf")
