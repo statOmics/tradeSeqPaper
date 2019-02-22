@@ -1,0 +1,475 @@
+---
+title: "evaluate methods on second generation simulation"
+author: "Koen Van den Berge"
+date: "4 June 2018"
+output: html_document
+---
+
+```{r data}
+library(slingshot)
+library(RColorBrewer)
+library(mgcv)
+library(tradeR)
+library(edgeR)
+library(rafalib)
+library(wesanderson)
+
+data=readRDS("~/Downloads/v2 3/dataset2.rds")
+counts <- t(data$counts)
+# non-housekeeping genes are also genes that vary along pseudotime but not necessarily in a differential sense.
+falseGenes <- data$moduleinfo_downstream$downstream_id
+nullGenes <- rownames(counts)[!rownames(counts)%in%data$moduleinfo_downstream$downstream_id]
+trueTime <- data$global_pseudotime$pseudotime
+g <- Hmisc::cut2(trueTime,g=12)
+#cols <- colorRampPalette(c("yellow","red"))(10)
+pal <- wes_palette("Zissou1", 12, type = "continuous")
+
+## add more difficult null genes by permuting early network genes in blocks
+upstreamDEGenes = data$feature_info$gene_id[data$feature_info$module_id%in%c("1","8","2")]
+upstreamDEGenes <- upstreamDEGenes[upstreamDEGenes%in%rownames(counts)]
+
+addNullGenesByPermutation <- function(counts, upstreamGenes, data){
+  countsNull <- rbind(counts,counts[upstreamGenes,])
+  addedNullGenesId <- (nrow(counts)+1):nrow(countsNull)
+
+  quants <- quantile(data$global_pseudotime$pseudotime,probs=seq(0,1,by=.1))
+  for(i in 2:length(quants)){
+    cellId <- data$global_pseudotime$cell_id[data$global_pseudotime$pseudotime<=quants[i] & data$global_pseudotime$pseudotime>quants[i-1]]
+    countsNull[addedNullGenesId,cellId] <- t(apply(countsNull[addedNullGenesId,cellId],1,sample))
+  }
+  counts <- countsNull
+  return(counts)
+}
+
+# shuffle those genes five times
+set.seed(83)
+countsNull1 <- addNullGenesByPermutation(counts, upstreamDEGenes, data)
+countsNull2 <- addNullGenesByPermutation(countsNull1, upstreamDEGenes, data)
+# countsNull3 <- addNullGenesByPermutation(countsNull2, upstreamDEGenes, data)
+# countsNull4 <- addNullGenesByPermutation(countsNull3, upstreamDEGenes, data)
+# countsNull5 <- addNullGenesByPermutation(countsNull4, upstreamDEGenes, data)
+countsNull5=countsNull2
+
+rownames(countsNull5)[(nrow(counts)+1):nrow(countsNull5)] <- paste0("nullGene",1:length((nrow(counts)+1):nrow(countsNull5)))
+nullGenes <- c(nullGenes,paste0("nullGene",1:length((nrow(counts)+1):nrow(countsNull5))))
+counts <- countsNull5
+
+# quantile normalization
+FQnorm <- function(counts){
+  rk <- apply(counts,2,rank,ties.method='min')
+  counts.sort <- apply(counts,2,sort)
+  refdist <- apply(counts.sort,1,median)
+  norm <- apply(rk,2,function(r){ refdist[r] })
+  rownames(norm) <- rownames(counts)
+  return(norm)
+}
+normCounts <- FQnorm(counts)
+
+## dim red
+pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
+rd <- pca$x[,1:2]
+plot(rd, pch=16, asp = 1)
+
+set.seed(9)
+cl <- kmeans(rd, centers = 3)$cluster
+plot(rd, col = brewer.pal(9,"Set1")[cl], pch=16, asp = 1)
+legend("topleft",legend=as.character(1:7),col=brewer.pal(9,"Set1")[1:7],pch=16,cex=2/3,bty='n')
+#lineages
+#lin <- getLineages(rd, cl, start.clus=4, end.clus=c(1,2)) #no null genes added
+lin <- getLineages(rd, cl, start.clus=3, end.clus=c(1,2))
+plot(rd, col = pal[g], pch=16, asp = 1)
+lines(lin,lwd=2)
+#curves
+crv <- getCurves(lin)
+plot(rd, col = pal[g], pch=16, asp = 1)
+lines(crv, lwd=2, col="black")
+```
+
+# Plot trajectories for paper
+
+```{r}
+
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/sim2_dataset2/trajectorySlingshot_sim2Dat2.png", width=7, height=7, units="in", res=350)
+plot(rd, col = pal[g], pch=16)
+lines(crv, lwd=2, col="black")
+legend("topleft", legend=levels(g), pch=16, col=pal, cex=2/3, bty="n")
+dev.off()
+
+```
+
+# fit smoothers on raw data
+
+```{r}
+cWeights <- slingCurveWeights(crv)
+pseudoT <- slingPseudotime(crv, na=FALSE)
+gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights)
+```
+
+# Test for differences at end point
+
+```{r}
+endRes <- endPointTest(gamList)
+hist(endRes$pvalue)
+deGenesEndGam <- rownames(counts)[which(p.adjust(endRes$pvalue,"fdr")<=0.05)]
+mean(falseGenes%in%deGenesEndGam) #TPR
+mean(!deGenesEndGam%in%falseGenes) #FDR
+```
+
+# edgeR analysis on final clusters
+
+```{r}
+countFinalClusters <- counts[,cl%in%c(1,2)]
+clFinalClusters <- cl[cl%in%c(1,2)]
+design <- model.matrix(~clFinalClusters)
+
+library(edgeR)
+d <- DGEList(countFinalClusters)
+d <- calcNormFactors(d)
+d <- estimateDisp(d, design)
+fit <- glmFit(d, design)
+lrt <- glmLRT(fit, coef=2)
+deGenesEdgeR <- rownames(lrt$table)[p.adjust(lrt$table$PValue,"fdr")<=0.05]
+mean(falseGenes%in%deGenesEdgeR) #TPR
+mean(deGenesEdgeR%in%nullGenes) #FDR
+```
+
+# compare GAM end point vs edgeR analysis
+
+```{r}
+library(rafalib)
+mypar(mfrow=c(1,1))
+
+## compare
+edgeRDE <- p.adjust(lrt$table$PValue,"fdr")<=0.05
+gamDE <- p.adjust(endRes$pval,"fdr")<=0.05
+vennC <- cbind(edgeRDE,gamDE)
+vennDiagram(vennC, main="end point comparison across all trajectories")
+
+```
+
+# Test for different expression pattern
+
+```{r}
+resPattern <- patternTest(gamList)
+hist(resPattern$pval)
+deGenesPattern <- rownames(counts)[which(p.adjust(resPattern$pval,"fdr")<=0.05)]
+length(deGenesPattern)
+mean(falseGenes%in%deGenesPattern) #TPR
+mean(!deGenesPattern%in%falseGenes) #FDR
+
+
+#statsAll <- unlist(lapply(gamList, function(x) getStat(x,L)))
+#plot(log(statsAll), col=c(1,2)[(rownames(counts)%in%falseGenes)+1], main="test over 100 points")
+#plot(log(resPattern[,1]), col=c(1,2)[(rownames(counts)%in%falseGenes)+1], main="testing all coefficients") ; legend("topleft",c("null","false"),col=1:2,pch=1)
+```
+
+# Test for difference of starting point
+
+```{r}
+startRes <- startPointTest(gamList)
+hist(startRes$pvalue)
+deGenesStartGam <- rownames(counts)[which(p.adjust(startRes$pvalue,"fdr")<=0.05)]
+mean(falseGenes%in%deGenesStartGam) #TPR
+mean(!deGenesStartGam%in%falseGenes) #FDR
+```
+
+# Monocle BEAM analysis
+
+```{r}
+### old monocle BEAM analysis
+library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
+sampleInfo <- cbind(data$global_pseudotime,data$progressions[,2])
+rownames(sampleInfo) <- sampleInfo$cell_id
+pd <- new("AnnotatedDataFrame", sampleInfo)
+featureInfo <- data.frame(gene_short_name=rownames(counts))
+rownames(featureInfo) <- rownames(counts)
+fd <- new("AnnotatedDataFrame", featureInfo)
+cds <- newCellDataSet(counts, phenoData=pd, featureData=fd,
+                expressionFamily=negbinomial.size())
+cds <- estimateSizeFactors(cds)
+cds <- estimateDispersions(cds)
+cds <- reduceDimension(cds, max_components = 4, method = 'ICA')
+cds <- orderCells(cds, num_paths=2)
+plot_cell_trajectory(cds, color_by = "State")
+# monocle does not find a branching point on 2 components! specify 4.
+BEAM_res <- BEAM(cds,  cores = 1)
+sum(BEAM_res$qval<0.05)
+```
+
+# BranchedGP
+
+```{r}
+### export results from monocle for BranchedGP
+# mean center for BranchedGP
+# countsCentered <- scale(t(counts), center=TRUE, scale=FALSE)
+# monocleData <- as.data.frame(cbind(phenoData(cds)$Pseudotime, phenoData(cds)$State,t(reducedDimS(cds))))
+# colnames(monocleData) <- c("StretchedPseudotime", "State", "DDRTreeDim1", "DDRTreeDim2")
+# ### force bifurcation, according to true state:
+# plot_cell_trajectory(cds, color_by = "State")
+# plot_cell_trajectory(cds, color_by = "edge_id")
+# monocleData$State[monocleData$State%in%c(3:7)] <- 3
+# plot_cell_trajectory(cds, color_by = monocleData$State)
+# write.table(countsCentered, file="~/countsCenteredBranchedGPSim500.txt", , row.names=TRUE, col.names=TRUE, quote=FALSE)
+# write.table(monocleData, "~/monocleDataBranchedGPSim500.txt", , row.names=TRUE, col.names=TRUE, quote=FALSE)
+```
+
+# tradeR on true time and weights
+
+```{r}
+# copied from 20180902_evaluateNewSimulations.R
+### tradeR on true pseudotime and true weights
+library(mgcv)
+library(tradeR)
+trueWeights <- matrix(0,nrow=ncol(counts), ncol=2)
+rownames(trueWeights) <- colnames(counts)
+trueWeights[data$progressions$cell_id[data$progressions$edge_id==1],] <- c(0.5, 0.5)
+trueWeights[data$progressions$cell_id[data$progressions$edge_id==2],] <- matrix(c(0,1),nrow=sum(data$progressions$edge_id==2),ncol=2,byrow=TRUE)
+trueWeights[data$progressions$cell_id[data$progressions$edge_id==3],] <- matrix(c(1,0),nrow=sum(data$progressions$edge_id==3),ncol=2,byrow=TRUE)
+gamListTrueTime <- fitGAM(counts, pseudotime=matrix(data$global_pseudotime$pseudotime, nrow=ncol(counts),ncol=2), cellWeights=trueWeights)
+# end point test
+waldEndPointResTrueTime <- endPointTest(gamListTrueTime)
+padjWaldTrueTime <- p.adjust(waldEndPointResTrueTime$pvalue,"fdr")
+sum(padjWaldTrueTime<=0.05)
+# pattern test
+patternResTrueTime <- patternTest(gamListTrueTime)
+padjPatternTrueTime <- p.adjust(patternResTrueTime$pvalue,"fdr")
+sum(padjPatternTrueTime<=0.05, na.rm=TRUE)
+
+```
+
+# GPfates
+
+```{r}
+# export
+logCpm <- edgeR::cpm(counts, prior.count=.125, log=TRUE)
+sampleInfo <- cbind(data$progressions, data$global_pseudotime)
+rownames(sampleInfo) <- sampleInfo$cell_id
+write.table(logCpm, file="~/logCpmDataset2.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
+write.table(sampleInfo, file="~/sampleInfoDataset2.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
+# run with 20181010_runGPfates_sim2.py
+# import output: true pseudotime
+#GPfatesWeights <- read.table("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/sim2_dataset2/GPfatesWeights_sim2Dataset2.txt", header=FALSE)
+#GPfatesBif <- read.table("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/sim2_dataset2/GPfatesBifStats_sim2Dataset2.txt", header=FALSE)
+# self pseudotime
+GPfatesWeights <- read.table("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/sim2_dataset2/GPfatesWeights_sim2Dataset2.txt", header=FALSE)
+GPfatesBif <- read.table("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/sim2_dataset2/GPfatesBifStats_sim2Dataset2.txt", header=FALSE)
+colnames(GPfatesBif) <- c("bif_ll", "amb_ll", "shuff_bif_ll", "shuff_amb_ll", "phi0_corr", "D", "shuff_D")
+
+# D should be a log likelihood ratio of branching versus not branching.
+plot(GPfatesBif$D, col=c(1,2)[(rownames(counts)%in%falseGenes)+1], main="GPfates bifurcation") ; legend("topleft",c("null","false"),col=1:2,pch=1)
+```
+
+# GPfates + tradeR
+
+```{r}
+# based on GPfates pseudotime
+gamListGPfatesTrueTime <- fitGAM(counts, pseudotime=matrix(data$global_pseudotime$pseudotime, nrow=ncol(counts),ncol=2), cellWeights=GPfatesWeights)
+# end point test
+waldEndPointResTrueTimeGPfates <- endPointTest(gamListGPfatesTrueTime)
+# pattern test
+patternResTrueTimeGPfates <- patternTest(gamListGPfatesTrueTime)
+#
+# # based on slingshot pseudotime, but GPfates weights
+# gamListGPfates <- fitGAM(counts, pseudotime=matrix(data$global_pseudotime$pseudotime, nrow=ncol(counts),ncol=2), cellWeights=GPfatesWeights)
+# # end point test
+# waldEndPointResGPfates <- endPointTest(gamListGPfates)
+# # pattern test
+# patternResGPfates <- patternTest(gamListGPfates)
+```
+
+# Performance plots
+
+```{r}
+########
+# FDP-TPR
+########
+# library(iCOBRA)
+# library(scales)
+# truth <- as.data.frame(matrix(rep(0,nrow(counts)), dimnames=list(rownames(counts),"status")))
+# truth[falseGenes,"status"] <- 1
+# cols <- hue_pal()(8)
+# names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern")
+#
+# ### estimated pseudotime
+# pval <- data.frame( tradeR_slingshot_end=endRes$pval,
+#                     tradeR_slingshot_pattern=resPattern$pval,
+#                     BEAM=BEAM_res$pval,
+#                     edgeR=lrt$table$PValue,
+#                       row.names=rownames(counts))
+# cobra <- COBRAData(pval=pval, truth=truth)
+# cobra <- calculate_adjp(cobra)
+# cobra <- calculate_performance(cobra, binary_truth="status")
+# cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+# plot_roc(cobraplot)
+# plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1))
+# pEst <- plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+#
+#
+# ### true pseudotime
+# pval <- data.frame( tradeR_slingshot_end=waldEndPointResTrueTime$pval,
+#                     tradeR_slingshot_pattern=patternResTrueTime$pval,
+#                     BEAM=BEAM_res$pval,
+#                     edgeR=lrt$table$PValue,
+#                     tradeR_GPfates_end=waldEndPointResTrueTimeGPfates$pval,
+#                     tradeR_GPfates_pattern=patternResTrueTimeGPfates$pval,
+#                       row.names=rownames(counts))
+# score <- data.frame(GPfates=GPfatesBif$D,
+#                       row.names=rownames(counts))
+# cobra <- COBRAData(pval=pval, truth=truth, score=score)
+# cobra <- calculate_adjp(cobra)
+# cobra <- calculate_performance(cobra, binary_truth="status")
+# cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+# plot_roc(cobraplot)
+# plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+# pTrue <- plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+#
+# library(cowplot)
+# prow <- plot_grid( pEst + theme(legend.position="none") + xlab("FDP") + ggtitle("Estimated pseudotime"),
+#            pTrue + theme(legend.position="none") + xlab("FDP") + ggtitle("True pseudotime"),
+#            align = 'vh',
+#            labels = c("a", "b"),
+#            hjust = -1,
+#            nrow = 1
+#            )
+# legend_a <- get_legend(pTrue + theme(legend.position="bottom"))
+# p <- plot_grid( prow, legend_a, ncol = 1, rel_heights = c(1, .2))
+# png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/performanceSim1.png", width=7,height=6, units="in", res=300)
+# p
+# dev.off()
+#
+# #composite one plot
+# pval <- data.frame( tradeR_slingshot_end=endRes$pval,
+#                     tradeR_slingshot_pattern=resPattern$pval,
+#                     BEAM=BEAM_res$pval,
+#                     edgeR=lrt$table$PValue,
+#                     tradeR_GPfates_end=waldEndPointResTrueTimeGPfates$pval,
+#                     tradeR_GPfates_pattern=patternResTrueTimeGPfates$pval,
+#                       row.names=rownames(counts))
+# score <- data.frame(GPfates=GPfatesBif$D,
+#                       row.names=rownames(counts))
+# cobra <- COBRAData(pval=pval, truth=truth, score=score)
+# cobra <- calculate_adjp(cobra)
+# cobra <- calculate_performance(cobra, binary_truth="status")
+# cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+# plot_roc(cobraplot)
+# plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+# pAll <- plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+# png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/performanceSim1All.png", width=7,height=6, units="in", res=300)
+# pAll
+# dev.off()
+```
+
+# Performance plots based on all DE genes
+
+```{r}
+library(iCOBRA)
+library(scales)
+
+upstreamDEGenes = data$feature_info$gene_id[data$feature_info$module_id%in%c("1","8","2")]
+upstreamDEGenes <- upstreamDEGenes[upstreamDEGenes%in%rownames(counts)]
+
+truth <- as.data.frame(matrix(rep(0,nrow(counts)), dimnames=list(rownames(counts),"status")))
+truth[c(falseGenes,upstreamDEGenes),"status"] <- 1
+cols <- hue_pal()(8)
+names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern")
+
+pval <- data.frame( tradeR_slingshot_end=endRes$pval,
+                    tradeR_slingshot_pattern=resPattern$pval,
+                    BEAM=BEAM_res$pval,
+                    edgeR=lrt$table$PValue,
+                    tradeR_GPfates_end=waldEndPointResTrueTimeGPfates$pval,
+                    tradeR_GPfates_pattern=patternResTrueTimeGPfates$pval,
+                      row.names=rownames(counts))
+score <- data.frame(GPfates=GPfatesBif$D,
+                      row.names=rownames(counts))
+cobra <- COBRAData(pval=pval, truth=truth, score=score)
+cobra <- calculate_adjp(cobra)
+cobra <- calculate_performance(cobra, binary_truth="status")
+cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+plot_roc(cobraplot)
+plot_fdrtprcurve(cobraplot, pointsize=3/2, yaxisrange=c(0.5,1), xaxisrange=c(0,0.6))
+
+fdrPlotDataset2 <- plot_fdrtprcurve(cobraplot, pointsize=3/2)
+save(fdrPlotDataset2, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/simulation/fdrPlotDataset2.rda")
+```
+
+
+
+
+# Performance plots based on upstream DE genes
+
+```{r}
+upstreamDEGenes = data$feature_info$gene_id[data$feature_info$module_id%in%c("1","8","2")]
+upstreamDEGenes <- upstreamDEGenes[upstreamDEGenes%in%rownames(counts)]
+
+truth <- as.data.frame(matrix(rep(0,nrow(counts)), dimnames=list(rownames(counts),"status")))
+truth[c(falseGenes,upstreamDEGenes),"status"] <- 1
+cols <- hue_pal()(8)
+names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern")
+keepId <- which(!rownames(truth)%in%falseGenes)
+truth <- truth[keepId,,drop=FALSE]
+
+pval <- data.frame( tradeR_slingshot_end=waldEndPointResTrueTime$pval[keepId],
+                    tradeR_slingshot_pattern=patternResTrueTime$pval[keepId],
+                    BEAM=BEAM_res$pval[keepId],
+                    edgeR=lrt$table$PValue[keepId],
+                    tradeR_GPfates_end=waldEndPointResTrueTimeGPfates$pval[keepId],
+                    tradeR_GPfates_pattern=patternResTrueTimeGPfates$pval[keepId],
+                      row.names=rownames(counts)[keepId])
+score <- data.frame(GPfates=GPfatesBif$D,
+                      row.names=rownames(counts))
+cobra <- COBRAData(pval=pval, truth=truth, score=score)
+cobra <- calculate_adjp(cobra)
+cobra <- calculate_performance(cobra, binary_truth="status")
+cobraplot <- prepare_data_for_plot(cobra, colorscheme=cols[match(sort(unique(cobra@roc$method)),names(cols))])
+plot_roc(cobraplot)
+plot_fdrtprcurve(cobraplot, pointsize=3/2)#, yaxisrange=c(0.8,1), xaxisrange=c(0,0.5))
+```
+
+
+
+
+# Does edgeR break down with higher numbers of clusters?
+
+It does not seem to break down in this simulation.
+
+```{r}
+library(scales)
+k <- 14
+set.seed(1)
+cl <- kmeans(rd, centers = k)$cluster
+plot(rd, col = hue_pal()(k)[cl], pch=16, asp = 1)
+legend("topright",paste0("c",1:k),col=hue_pal()(k),pch=16)
+
+#get lineages
+lin <- getLineages(rd, cl, start.clus=2)
+lin
+plot(rd, col = hue_pal()(k)[cl], asp = 1, pch = 16)
+lines(lin, lwd = 3)
+
+#get curves
+crv <- getCurves(lin)
+crv
+plot(rd, col = hue_pal()(k)[cl], asp = 1, pch = 16)
+lines(crv, lwd = 3)
+legend("topright",paste0("c",1:k),col=hue_pal()(k),pch=16)
+
+```
+
+# edgeR analysis on k clusters
+
+```{r}
+countFinalClusters12 <- counts[,cl%in%c(12,13)]
+clFinalClusters12 <- cl[cl%in%c(12,13)]
+design12 <- model.matrix(~clFinalClusters12)
+
+library(edgeR)
+d <- DGEList(countFinalClusters12)
+d <- calcNormFactors(d)
+d <- estimateDisp(d, design12)
+fit <- glmFit(d, design12)
+lrt12 <- glmLRT(fit, coef=2)
+deGenesEdgeR <- rownames(lrt12$table)[p.adjust(lrt12$table$PValue,"fdr")<=0.05]
+mean(falseGenes%in%deGenesEdgeR) #TPR
+mean(deGenesEdgeR%in%nullGenes) #FDR
+```
