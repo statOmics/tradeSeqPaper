@@ -23,13 +23,16 @@ crv <- getCurves(lin)
 plot(X[,1:2], col=colpal[as.factor(clus.labels)], pch=16)
 lines(crv)
 #3D plot
-# rgl::plot3d(X[,1:3], t='p', col=colpal[as.factor(clus.labels)],alpha=0.3, pch = 19, cex = 2, size=8, xlab="PC 1", ylab="PC 2", zlab="PC 3", aspect="iso", box=FALSE, axes=FALSE)
-# #rgl::plot3d(X[,1:3], t='p', col=c("white","black")[hlp+1],alpha=0.3, pch = 19, cex = 2, size=8, xlab="PC 1", ylab="PC 2", zlab="PC 3", aspect="iso", box=FALSE, axes=FALSE)
-# rgl::axes3d(tick=FALSE)
-# rgl::par3d(windowRect = c(20, 30, 800, 800))
-# for (i in seq_along(curves)){
-#   rgl::plot3d(crv@curves[[i]]$s[order(crv@curves[[i]]$lambda),1:3], type='l',add=TRUE, lwd=4,col=colpal[which.max(tail(lin@lineages[[i]],1)==levels(clus.labels))])
-# }
+rgl::plot3d(X[,1:3], t='p', col=colpal[as.factor(clus.labels)],alpha=0.3, pch = 19, cex = 2, size=8, xlab="PC 1", ylab="PC 2", zlab="PC 3", aspect="iso", box=FALSE, axes=FALSE)
+#rgl::plot3d(X[,1:3], t='p', col=c("white","black")[hlp+1],alpha=0.3, pch = 19, cex = 2, size=8, xlab="PC 1", ylab="PC 2", zlab="PC 3", aspect="iso", box=FALSE, axes=FALSE)
+rgl::axes3d(tick=FALSE)
+rgl::par3d(windowRect = c(20, 30, 800, 800))
+for (i in seq_along(curves)){
+  rgl::plot3d(crv@curves[[i]]$s[order(crv@curves[[i]]$lambda),1:3], type='l',add=TRUE, lwd=4,col=colpal[which.max(tail(lin@lineages[[i]],1)==levels(clus.labels))])
+}
+rgl::plot3d(20, 90, 0, col="black", add=TRUE)
+
+
 # rgl.postscript("~/fletcher3d.pdf", fmt="pdf")
 
 ```
