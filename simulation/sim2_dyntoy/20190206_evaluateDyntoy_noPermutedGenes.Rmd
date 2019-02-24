@@ -131,12 +131,43 @@ fd <- new("AnnotatedDataFrame", featureInfo)
 cds <- newCellDataSet(cellData=counts, featureData=fd, expressionFamily=negbinomial.size())
 cds <- estimateSizeFactors(cds)
 cds <- estimateDispersions(cds)
-cds <- reduceDimension(cds)#, max_components = 4, method = 'ICA')
-cds <- orderCells(cds)#, num_paths=2)
+cds <- reduceDimension(cds)
+cds <- orderCells(cds)
+plot_cell_trajectory(cds, color_by = "State")
+# If we do not specify the root of the Monocle trajectory, it has the start of the lineage wrong, which obscures downstream analysis.
+cds <- orderCells(cds, root_state=7)#, num_paths=2)
 plot_cell_trajectory(cds, color_by = "State")
 # monocle does not find a branching point on 2 components! specify 4.
 BEAM_res <- BEAM(cds,  cores = 1)
 sum(BEAM_res$qval<0.05)
+```
+
+# tradeR downstream of Monocle 2
+
+```{r}
+phenoData(cds)$milestone <- gid$group_id
+plot_cell_trajectory(cds, color_by = "milestone")
+plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1) ; legend("topleft", paste0("M",1:4), col=2:5,pch=16)
+#M2 and M4 are the branches we need to compare.
+# these correspond to State 1 and State 6.
+
+ptMon <- matrix(phenoData(cds)$Pseudotime, nrow=ncol(counts), ncol=2, byrow=FALSE)
+stateMon <- phenoData(cds)$State
+#plot(x=ptMon,y=stateMon)
+# state 6 and state 1 are the two lineages.
+cellWeightsMon <- matrix(0, nrow=ncol(cds), ncol=2)
+rownames(cellWeightsMon) <- colnames(counts)
+cellWeightsMon[stateMon==1,1] <- 1
+cellWeightsMon[stateMon==6,2] <- 1
+cellWeightsMon[stateMon!=c(1,6),] <- c(0.5, 0.5)
+gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=TRUE)
+resPatternMon <- patternTest(gamListMon)
+resEndMon <- diffEndTest(gamListMon)
+
+# if not re-rooted, the end of slingshot lineage is the middle of Monocle lineage
+#mypar(mfrow=c(1,2))
+#i=27 ; plotSmoothers(gamListMon[[i]]) ; plotSmoothers(gamList[[i]])
+
 ```
 
 # tradeR on true time and weights
@@ -192,14 +223,17 @@ library(iCOBRA)
 library(scales)
 truth <- as.data.frame(matrix(rep(0,nrow(counts)), dimnames=list(rownames(counts),"status")))
 truth[falseGenes,"status"] <- 1
-cols <- hue_pal()(8)
-names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern")
+cols <- hue_pal()(10)
+names(cols) <- c("BEAM", "GPfates", "edgeR", "tradeR_slingshot_end", "tradeR_slingshot_pattern", "tradeR_GPfates_end", "tradeR_GPfates_pattern",
+"tradeR_Monocle2_end", "tradeR_Monocle2_pattern")
 
 ### estimated pseudotime
 pval <- data.frame( tradeR_slingshot_end=endRes$pval,
                     tradeR_slingshot_pattern=resPattern$pval,
                     BEAM=BEAM_res$pval,
                     edgeR=lrt$table$PValue,
+                    tradeR_Monocle2_end=resEndMon$pvalue,
+                    tradeR_Monocle2_pattern=resPatternMon$pvalue,
                       row.names=rownames(counts))
 cobra <- COBRAData(pval=pval, truth=truth)
 cobra <- calculate_adjp(cobra)
@@ -251,6 +285,8 @@ pval <- data.frame( tradeR_slingshot_end=endRes$pval,
                     edgeR=lrt$table$PValue,
                     tradeR_GPfates_end=waldEndPointResTrueTimeGPfates$pval,
                     tradeR_GPfates_pattern=patternResTrueTimeGPfates$pval,
+                    tradeR_Monocle2_end=resEndMon$pvalue,
+                    tradeR_Monocle2_pattern=resPatternMon$pvalue,
                       row.names=rownames(counts))
 score <- data.frame(GPfates=GPfatesBif$D,
                       row.names=rownames(counts))

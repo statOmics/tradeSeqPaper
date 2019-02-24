@@ -87,6 +87,7 @@ cds <- reduceDimension(cds, reduction_method = 'UMAP')
 cds <- partitionCells(cds)
 cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
 pr_graph_test <- principalGraphTest(cds, k=3, cores=1)
+plot_cell_trajectory(cds,color_by="cellid") # fails to discover cyclic pattern.
 ```
 
 # mgcv
