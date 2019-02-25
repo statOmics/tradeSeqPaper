@@ -57,7 +57,6 @@ lines(crv, lwd=2, col="black")
 gid <- data$prior_information$groups_id
 gid <- gid[match(colnames(counts),gid$cell_id),]
 plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
-
 ```
 
 # fit smoothers on raw data
@@ -66,6 +65,16 @@ plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
 cWeights <- slingCurveWeights(crv)
 pseudoT <- slingPseudotime(crv, na=FALSE)
 gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, verbose=FALSE)
+```
+
+# plot false genes
+
+```{r}
+pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy/falseGenesSlingshot.pdf")
+for(ii in 1:length(falseGenes)){
+  print(plotSmoothers(gamList[[falseGenes[ii]]]))
+}
+dev.off()
 ```
 
 # Test for differences at end point
