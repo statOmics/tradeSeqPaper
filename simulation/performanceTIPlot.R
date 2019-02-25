@@ -132,17 +132,17 @@ rm(data, counts, truePseudotime, g, normCounts, pca, rd, crv, lin, cl,
    null1, null2, null3, nullGenes)
 
 ### prepare performance plots ####
-cols <- c("#e41a1c", "#e78ac3", "#ff7f00", "#4daf4a",
-          rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6")
-names(cols) <- c("BEAM", "GPfates", "edgeR",  "Monocle3_assoc",
-                 "tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
-                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern", "tradeR_Monocle2_pattern",
-                 "tradeR_slingshot_assoc")
-linetypes <- c(rep("solid", 5), "dashed", "dotdash", "solid", "dashed", "dotdash", "solid")
-names(linetypes) <- c("BEAM", "GPfates", "edgeR",  "Monocle3_assoc",
-                 "tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
-                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern", "tradeR_Monocle2_pattern",
-                 "tradeR_slingshot_assoc")
+cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
+          "#e41a1c", "#e78ac3", "#ff7f00")
+names(cols) <- c("tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
+                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
+                 "tradeR_Monocle2_pattern", "tradeR_slingshot_assoc", "Monocle3_assoc",
+                 "BEAM", "GPfates", "edgeR")
+linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 6))
+names(linetypes) <- c("tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
+                      "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
+                      "tradeR_Monocle2_pattern", "tradeR_slingshot_assoc", "Monocle3_assoc",
+                      "BEAM", "GPfates", "edgeR")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -280,7 +280,8 @@ pAll <- ggplot(full_join(CyclePlot, DyntoyPlot),
   scale_linetype_manual(values = linetypes, breaks = names(linetypes))
 
 legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
-                           theme(legend.position = "bottom"))
+                           theme(legend.position = "bottom",
+                                 legend.key.width = unit(1.3, "cm")))
 
 ### composite plot ####
 ggCycle <- ggplot(as.data.frame(rdCycle), aes(x = PC1, y = PC2)) +
@@ -352,4 +353,7 @@ p1
 
 p2 <- plot_grid(p1, legend_all, ncol = 1, rel_heights = c(1, .25))
 p2
-ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/simPerformance.pdf")
+
+ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .8)
+
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"))
