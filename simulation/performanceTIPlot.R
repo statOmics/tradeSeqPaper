@@ -354,6 +354,6 @@ p1
 p2 <- plot_grid(p1, legend_all, ncol = 1, rel_heights = c(1, .25))
 p2
 
-ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .8)
+# ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
-ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"))
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
