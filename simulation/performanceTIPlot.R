@@ -1,3 +1,4 @@
+#setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -23,7 +24,7 @@ FQnorm <- function(counts){
 }
 
 ### cyclic trajectory ####
-data <- readRDS(here("simulation", "sim2_dyngen_cycle_72/72.rds"))
+data <- readRDS(here::here("simulation", "sim2_dyngen_cycle_72/72.rds"))
 counts <- t(data$counts)
 pal <- wes_palette("Zissou1", 12, type = "continuous")
 truePseudotime <- data$prior_information$timecourse_continuous
@@ -132,16 +133,16 @@ rm(data, counts, truePseudotime, g, normCounts, pca, rd, crv, lin, cl,
 
 ### prepare performance plots ####
 cols <- c("#e41a1c", "#e78ac3", "#ff7f00", "#4daf4a",
-          rep(c("#C6DBEF", "#08306B", "#4292C6"), each = 2))
+          rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6")
 names(cols) <- c("BEAM", "GPfates", "edgeR",  "Monocle3_assoc",
-                 "tradeR_slingshot_end", "tradeR_GPfates_end",
-                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
+                 "tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
+                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern", "tradeR_Monocle2_pattern",
                  "tradeR_slingshot_assoc")
-linetypes <- c(rep("solid", 5), "twodash", "solid", "twodash", "solid")
+linetypes <- c(rep("solid", 5), "dashed", "dotdash", "solid", "dashed", "dotdash", "solid")
 names(linetypes) <- c("BEAM", "GPfates", "edgeR",  "Monocle3_assoc",
-                      "tradeR_slingshot_end", "tradeR_GPfates_end",
-                      "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
-                      "tradeR_slingshot_assoc")
+                 "tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
+                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern", "tradeR_Monocle2_pattern",
+                 "tradeR_slingshot_assoc")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -152,7 +153,7 @@ theme_update(legend.position = "none",
              axis.title.x = element_text(size = rel(1)),
              axis.title.y = element_text(size = rel(1)),
              axis.text.x = element_text(size = rel(.8)),
-             axis.text.y = element_text(size = rel(.8))) 
+             axis.text.y = element_text(size = rel(.8)))
 
 ### cyclic plot ####
 cobraCycle <- readRDS(here("simulation", "sim2_dyngen_cycle_72", "cobraObject.rds"))
@@ -278,7 +279,7 @@ pAll <- ggplot(full_join(CyclePlot, DyntoyPlot),
   scale_color_manual(values = cols, breaks = names(cols)) +
   scale_linetype_manual(values = linetypes, breaks = names(linetypes))
 
-legend_all <- get_legend(pAll + labs(col = "", linetype = "") + 
+legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
                            theme(legend.position = "bottom"))
 
 ### composite plot ####
@@ -339,10 +340,10 @@ dev.off()
 
 p1 <- plot_grid(ggCycle,
                 ggdraw() +
-                  draw_image("wesandersonColorLegendVertical.png",
+                  draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
                              scale = 1),
                 ggDyntoy, NULL,
-                ggDyngen, pCycle, NULL, pDyntoy, NULL, pDyngen, 
+                ggDyngen, pCycle, NULL, pDyntoy, NULL, pDyngen,
                 nrow = 2, ncol = 5, rel_heights = c(0.5, 1),
                 rel_widths = c(1, 0.3, 1, 0.3, 1),
                 labels = c("a", "", "c", "", "e", "b", "", "d", "", "f")

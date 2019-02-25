@@ -212,7 +212,7 @@ patternResTrueTimeGPfates <- patternTest(gamListGPfatesTrueTime)
 ```
 
 
-# plot the false genes
+# plot false genes: true pseudotime
 
 ```{r}
 pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/falseGenesTruePseudotime.pdf")
@@ -222,12 +222,12 @@ for(i in 1:length(falseGenes)){
 dev.off()
 ```
 
-# plot the null genes (which are all permuted)
+# plot false genes: estimated pseudotime
 
 ```{r}
-pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/nullGenesTruePseudotime.pdf")
-for(i in 1:length(nullGenes)){
-   plotSmoothers(gamListTrueTime[[nullGenes[i]]])
+pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/falseGenesSlingshot.pdf")
+for(i in 1:length(falseGenes)){
+   plotSmoothers(gamList[[falseGenes[i]]])
 }
 dev.off()
 ```
