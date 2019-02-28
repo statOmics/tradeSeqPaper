@@ -10,7 +10,7 @@ data <- m$model
 y <- data$y
 nPoints = 100
 
-#construct time variable based on cell assignments.
+# construct time variable based on cell assignments.
 nCurves <- length(m$smooth)
 col <- timeAll <- rep(0, nrow(data))
 for (jj in seq_len(nCurves)) {
@@ -39,7 +39,7 @@ p <- ggplot(df, aes(x = x, y = y, col = factor(type))) +
   scale_color_manual(values = c("#377EB8", "#FF7F00")) +
   guides(color = F)
 
-#predict and plot smoothers across the range
+# predict and plot smoothers across the range
 for (jj in seq_len(nCurves)) {
   df <- tradeR:::.getPredictRangeDf(m, jj, nPoints = nPoints)
   yhat <- predict(m, newdata = df, type = "response")
@@ -48,7 +48,12 @@ for (jj in seq_len(nCurves)) {
                                 y = log(yhat + 1), type = jj),
               size = 3)
 }
-p
+
+# Add the knots
+p <- p + 
+  scale_x_continuous(minor_breaks = m$smooth[[1]]$xp + .001) +
+  theme(panel.grid.minor.x = element_line(linetype = "dashed"))
+
 ggsave("figures/lineages.pdf", p, height = 7)
 
 
