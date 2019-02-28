@@ -55,10 +55,6 @@ countsFiltered <- counts[keep,]
 ```
 
 ```{r EDA}
-# pdf("~/batchOE.pdf")
-# for(i in 1:24) plotMDS(d, pch=16, col=droplevels(phenoData(Cufflinks_eSet)[[i]]))
-# dev.off()
-
 # batch from Github
 library(scone) ; library(edgeR)
 load("~/p63-HBC-diff/output/clust/oeHBCdiff/oeHBCdiff_scone.Rda")
@@ -81,40 +77,11 @@ register(DoparParam())
 
 core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = clus.labels, batch=batch))
 #zinb_c <- zinbFit(core, X = '~ clusLabel + batch', commondispersion = TRUE)
-#zinb_c_noCluster <- zinbFit(core, X = '~ batch', commondispersion = TRUE)
 
 #save(zinb_c,file="~/zinbFletcher.rda")
 load("~/zinbFletcher.rda")
 weights <- computeObservationalWeights(zinb_c, countsFiltered)
-#weightsNoCluster <- computeObservationalWeights(zinb_c_noCluster, countsFiltered)
-#
-# mypar(mfrow=c(2,2))
-# hist(weights[countsFiltered==0], ylim=c(0,3.5e6), main="~cluster+batch", xlab="Weight")
-# hist(weightsNoCluster[countsFiltered==0], ylim=c(0,3.5e6), main="~batch", xlab="Weight")
-# #boxplot cluster+batch
-# weightByCluster <- list()
-# for(ii in 1:nlevels(clus.labels)){
-#   id <- which(clus.labels==levels(clus.labels)[ii])
-#   weightByCluster[[ii]] <- weights[,id][which(countsFiltered[,id]==0)]
-# }
-# weightByClusterVec <- do.call(c,weightByCluster)
-# clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
-# weightDat <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-# boxplot(weight~clusLabel,data=weightDat, main="~cluster+batch", xlab="Cluster", ylab="Weight")
-# #boxplot batch
-# weightByCluster <- list()
-# for(ii in 1:nlevels(clus.labels)){
-#   id <- which(clus.labels==levels(clus.labels)[ii])
-#   weightByCluster[[ii]] <- weightsNoCluster[,id][which(countsFiltered[,id]==0)]
-# }
-# weightByClusterVec <- do.call(c,weightByCluster)
-# clusLabelVec <- unlist(mapply(rep, 1:13, unlist(lapply(weightByCluster,length))))
-# weightDatClust <- data.frame(weight=weightByClusterVec, clusLabel=clusLabelVec)
-# boxplot(weight~clusLabel,data=weightDatClust, main="~batch", xlab="Cluster", ylab="Weight")
-### set real cluster names instead of numbers
 
-
-### plot number of zeros per cluster as well
 ```
 
 
@@ -348,14 +315,18 @@ sumFoundFisher <- sapply(1:nrow(countsFiltered), function(ii){
 })
 ```
 
-### cell cycle patterns within lineages: tradeR
+### cell cycle patterns within lineages: tradeR associationTest
 
 ```{r}
 assocRes <- associationTest(gamList, omnibus=TRUE, lineages=TRUE)
 deAssoc1 <- rownames(assocRes)[p.adjust(assocRes$pvalue_1,"fdr")<=0.05]
 deAssoc1 <- deAssoc1[!is.na(deAssoc1)]
 length(deAssoc1) #1931 DE genes
+```
 
+#### cell cycle gene set
+
+```{r}
 cellGenes=read.table("~/Downloads/GO_term_summary_20181001_091947.txt", header=TRUE, sep="\t", row.names=NULL)
 cellGenes$MGI.Gene.Marker.ID <- as.character(cellGenes$MGI.Gene.Marker.ID)
 cellGenes <- cellGenes[cellGenes$MGI.Gene.Marker.ID%in%rownames(countsFiltered),]
@@ -383,9 +354,12 @@ png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/ce
 plot(x=1:nrow(assocRes), y=sumFoundCC/sumFoundRandom, type="l", ylab="# genes found with tradeR / # genes found under random selection", bty='n', xlab="Gene list ordered according to significance", col='darkgray', lwd=1.5)
 abline(h=1, lty=2, col="red")
 dev.off()
+```
 
 
+#### Heatmap of top genes
 
+```{r}
 o1 <- order(assocRes[deAssoc1,"waldStat_1"], decreasing=TRUE)
 top200Assoc <- deAssoc1[o1[1:200]]
 
@@ -403,8 +377,12 @@ df$ct <- NA
 df$cols <- NA
 df$ct[df$t1<80] <- "HBC"
 df$cols[df$t1<80] <- colpal[1]
-df$ct[df$t1>=80 & df$t1<115] <- "HBC*"
+#df$ct[df$t1>=80 & df$t1<115] <- expression(paste(Delta, "HBC1"))
+df$ct[df$t1>=80 & df$t1<115] <- "HBC1"
 df$cols[df$t1>=80 & df$t1<115] <- colpal[3]
+#df$ct[df$t1>=90 & df$t1<100] <- expression(paste(Delta, "HBC2"))
+df$ct[df$t1>=90 & df$t1<100] <- "HBC2"
+df$cols[df$t1>=90 & df$t1<100] <- colpal[6]
 df$ct[df$t1>=115 & df$t1<220] <- "GBC"
 df$cols[df$t1>=115 & df$t1<220] <- colpal[17]
 df$ct[df$t1>=220 & df$t1<250] <- "INP1"
@@ -428,10 +406,11 @@ annColors <- list(celltype=colhlp)
 heatRaw <- pheatmap(yScaled, cluster_cols=FALSE, show_rownames=FALSE, show_colnames=FALSE, cutree_rows=5, clustering.method="ward.D", annotation_col=annoCol, annotation_colors=annColors, annotation_names_col=FALSE)
 
 ## reorder big clusters.
+library(vegan)
 set.seed(7)
 origHClust <- heatRaw$tree_row
 hlpClust <- function(hc,mat){
-    stats::reorder(origHClust, wts=runif(200))
+    reorder(hc, wts=runif(200))
 }
 pheatmap(yScaled, cluster_cols=FALSE, show_rownames=FALSE, show_colnames=FALSE, cutree_rows=5, clustering.method="ward.D", annotation_col=annoCol, annotation_colors=annColors, annotation_names_col=FALSE, clustering_callback=hlpClust)
 ```
@@ -559,9 +538,6 @@ for(i in 1:15) lines(x=1:nrow(countsFiltered), y=sumFoundMat[,i], col=alpha(colo
 ```
 
 
-
-
-
 # Check for HBC markers
 
 ```{r}
@@ -609,6 +585,12 @@ sigAll24 <- names(which(rowSums(res)==4))
 # most of these genes seem to be very relevant.
 # https://www.genecards.org/cgi-bin/carddisp.pl?gene=FREM1
 # Cenpf and Cdca8 are about cell cycle
+
+library(UpSetR)
+resDf <- as.data.frame(res)
+colnames(resDf) <- c("Global", "Neur. vs. Microv.", "Neur. vs. Sust.", "Microv. vs. Sust.")
+upset(resDf[,-1], order.by="freq", text.scale = c(1.3, 1.3, 1, 1, 2, 1))
+
 
 plotSmoothersIk <- function(m, nPoints = 100, ...){
   data <- m$model
@@ -731,220 +713,6 @@ for(ii in c(1,2,4,5)){
   plotSmoothersIk(gamList[[sigAll24[ii]]], ylim=c(0,10), main=sigAll24[ii])
 }
 dev.off()
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Junk
-
-
-
-
-
-
-# Plot for paper v1
-
-
-```{r}
-plotSmoothersIk <- function(m, nPoints = 100, ...){
-
-  data <- m$model
-  y <- data$y
-
-  #construct time variable based on cell assignments.
-  nCurves <- length(m$smooth)
-  timeAll <- c()
-  col <- c()
-  for (jj in seq_len(nCurves)) {
-    for (ii in 1:nrow(data)) {
-      if (data[ii, paste0("l", jj)] == 1) {
-        timeAll[ii] <- data[ii, paste0("t", jj)]
-        col[ii] <- jj
-      } else {
-        next
-      }
-    }
-  }
-
-  # plot raw data
-    cols <- c("#B3DE69", "#FFED6F", "#A6761D")
-  plot(x = timeAll, y = log(y + 1), col = cols[col], pch = 16, cex = 2 / 3,
-       ylab = "Expression + 1 (log-scale)", xlab = "Pseudotime", ...)
-
-  #predict and plot smoothers across the range
-  for (jj in seq_len(nCurves)) {
-    df <- .getPredictRangeDf(m, jj, nPoints = nPoints)
-  yhat <- predict(m, newdata = df, type = "response")
-  lines(x = df[, paste0("t", jj)], y = log(yhat + 1), col = cols[jj], lwd = 2)
-  }
-  legend("bottomleft", c("Neuronal", "Microvillous", "Sustentacular"),col = cols,
-         lty = 1, lwd = 2, bty = "n", cex = 2 / 3)
-}
-
-# for talk
-png("~/Dropbox/PhD/seminars/presentations/zinbwaveTradeR/Janssen/patternGenesFletcher.png",width=8,height=5,units="in",res=330)
-mypar(mfrow=c(2,2))
-i=0
-while(i<4){
-  i=i+1
-  plotSmoothersIk(gamList[[o[i]]], main=rownames(resPat)[o][i])
-}
-dev.off()
-
-
-
-
-#par(mfrow=c(1,2))
-rgl::plot3d(X[,1:3], t='p', col=colpal[as.factor(clus.labels)],alpha=0.3, pch = 19, cex = 2, size=8, xlab="", ylab="", zlab="", aspect="iso", box=FALSE, axes=TRUE)
-for (i in seq_along(curves)){
-  rgl::plot3d(crv@curves[[i]]$s[order(crv@curves[[i]]$lambda),1:3], type='l',add=TRUE, lwd=4,col=colpal[which.max(tail(lin@lineages[[i]],1)==levels(clus.labels))])
-}
-#rgl::text3d(x=0,y=-100,z=0,"PC1")
-rgl.postscript("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/fletcher3d.pdf", fmt="pdf")
-
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCaseFletcher2.png", width=9, height=6.5, units="in", res=200)
-mypar(bty="l")
-layout(matrix(c(1,1,2,3),nrow=2,ncol=2,byrow=TRUE))
-# important gene plot
-plotSmoothersIk(gamList[[o[6]]])
-mtext("b", at=-30, font=2, cex=2)
-
-# barplot DE
-nrDEPat <- colSums(res)[-1]
-barplot(nrDEPat, ylab="Frequency", names=c("Neur vs. Micro", "Neur vs. Sus", "Micro vs. Sus"))
-mtext("c", at=-.2, font=2, cex=2)
-
-# relative enrichment plot
-par(mar=c(2.5,4,1.6,1.1), bty="l")
-plot(x=1:nrow(smootherStats), y=sumFoundPat/expRandom, type="l", ylab="Ratio of cell cycle genes found \n with tradeR vs. random selection", xlab="Rank")
-abline(h=1, lty=2, col="red")
-mtext("d", at=-2300, font=2, cex=2)
-dev.off()
-```
-
-
-
-
-
-```{r}
-#Look for neuronal gene sets?
-olfactoryBehavior=read.table("~/Downloads/GO_term_summary_20181002_051017.txt", header=TRUE, sep="\t", row.names=NULL)
-olfactoryBehavior$MGI.Gene.Marker.ID <- as.character(olfactoryBehavior$MGI.Gene.Marker.ID)
-mean(olfactoryBehavior$MGI.Gene.Marker.ID%in%rownames(counts))
-
-
-# microvilous
-microvillusGenes=read.table("~/Downloads/GO_term_summary_20181002_080501.txt", header=TRUE, sep="\t", row.names=NULL)
-microvillusGenes$MGI.Gene.Marker.ID <- as.character(microvillusGenes$MGI.Gene.Marker.ID)
-mean(microvillusGenes$MGI.Gene.Marker.ID%in%rownames(counts))
-
-# edgeR
-#11 and 15 are unique lineage 2 clusters.
-#7 and 4 are unique lineage 3 clusters.
-L <- matrix(0,nrow=ncol(fit$coefficients),ncol=4)
-rownames(L) <- colnames(fit$coefficients)
-L[c("clus.labels11","clus.labels7"),1] <- c(1,-1)
-L[c("clus.labels11","clus.labels4"),2] <- c(1,-1)
-L[c("clus.labels15","clus.labels7"),3] <- c(1,-1)
-L[c("clus.labels15","clus.labels4"),4] <- c(1,-1)
-lrtListMicro <- list()
-for(i in 1:ncol(L)) lrtListMicro[[i]] <- zinbwave::glmWeightedF(fit,contrast=L[,i])
-
-sumFoundMatMicro <- matrix(NA, nrow=nrow(countsFiltered), ncol=15)
-for(i in 1:length(lrtList)){
-  pvals <- lrtList[[i]]$table$PValue
-  o <- order(pvals)
-  pvalsO <- pvals[o]
-  namesO <- rownames(lrtList[[i]])[o]
-  sumFound <- sapply(1:nrow(countsFiltered), function(ii){
-    sum(microvillusGenes$MGI.Gene.Marker.ID %in% namesO[1:ii])
-  })
-  sumFoundMatMicro[,i] <- sumFound
-}
-
-o <- order(resPat$waldStat_2vs3, decreasing=TRUE)
-sumFoundPatMicro <- sapply(1:nrow(countsFiltered), function(ii){
-  sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(resPat[o,])[1:ii])
-})
-
-
-plot(x=1:nrow(countsFiltered), y=sumFoundPatMicro, type="l", log="y", col="darkseagreen3", lwd=2)
-for(i in 1:15) lines(x=1:nrow(countsFiltered), y=sumFoundMatMicro[,i], col=alpha(colorRampPalette(c("lightblue","darkblue"))(4)[i],.5))
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-# make heatmap of unique GAM genes compared to genes shared between GAM and edgeR
-
-```{r}
-countsGAMOnly <- countsFiltered[uniqueGamEndId,]
-# lineage 1
-countsGAMOnly1 <- countsGAMOnly[,gamList[[1]]$model$l1==1]
-o1 <- order(gamList[[1]]$model$t1[gamList[[1]]$model$l1==1])
-countsGAMOnly1 <- countsGAMOnly1[,o1]
-countsGAMOnly1 <- countsGAMOnly[!rowSums(countsGAMOnly1)==0,]
-countsGAMOnly1 <- t(scale(t(countsGAMOnly1)))
-## cluster gene expression
-library(clusterExperiment)
-geneClConsensusMerge <- function(geneClusters, cutoff, lineageName) {
-  ceg <- combineMany(geneClusters, proportion=0.7, minSize=10,propUnassigned=0.9, clusterFunction="hierarchical01")
-  plotClusters(ceg)
-  plotCoClustering(ceg)
-  ceg <- makeDendrogram(ceg,reduceMethod="none", filterIgnoresUnassigned=TRUE)
-  ceg <- mergeClusters(ceg, mergeMethod="locfdr", plotType="colorblock", cutoff=cutoff, DEMethod="limma")
-  assign(paste0("ceg", lineageName), ceg)
-  #save(list=paste0("ceg", lineageName), file=file.path(gClust_dir,paste0(expt_str, "_", lineageName, "_geneCl_final.Rda")))
-  return(ceg)
-}
-countsCluster1 <- t(countsGAMOnly1)
-clGeneLin1 <- clusterMany(countsCluster1, reduceMethod="none", clusterFunction=c("pam"), minSizes=1, subsample=F, sequential=F, ncores=detectCores()-1, random.seed=88, run=TRUE, ks = 4:15, verbose=TRUE, isCount=FALSE)
-consLin1 <- geneClConsensusMerge(clGeneLin1, 0.04, "neuronal")
 
 ```
 
