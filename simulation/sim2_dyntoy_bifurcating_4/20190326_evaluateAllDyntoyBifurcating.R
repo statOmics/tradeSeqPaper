@@ -5,6 +5,7 @@ library(tradeR)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+palette(wes_palette("Darjeeling1", 10, type="continuous"))
 datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
 
   FQnorm <- function(counts){
@@ -16,10 +17,8 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
     return(norm)
   }
 
-#pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/clusters.pdf")
+#pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
 for(datasetIter in 1:10){
-
-  if(is.na(datasetClusters[datasetIter,"start"])) next
 
   pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
@@ -28,6 +27,10 @@ for(datasetIter in 1:10){
   counts <- t(data$counts)
   falseGenes <- data$tde_overall$feature_id[data$tde_overall$differentially_expressed]
   nullGenes <- data$tde_overall$feature_id[!data$tde_overall$differentially_expressed]
+
+  # get milestones
+  gid <- data$prior_information$groups_id
+  gid <- gid[match(colnames(counts),gid$cell_id),]
 
   pal <- wes_palette("Zissou1", 12, type = "continuous")
   truePseudotime <- data$prior_information$timecourse_continuous
@@ -38,37 +41,32 @@ for(datasetIter in 1:10){
 
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-  rd <- pca$x[,1:4]
+  rd <- pca$x[,1:3]
   ## cluster
-  set.seed(9)
-  nClusters <- 6
+  nClusters <- datasetClusters$nClusters[datasetIter]
+  set.seed(5)
   cl <- kmeans(rd, centers = nClusters)$cluster
-
-  rafalib::mypar(mfrow=c(1,3))
-  plot(rd, col = brewer.pal(nClusters,"Set1")[cl], pch=16, asp = 1)
-  legend("topleft",legend=as.character(1:nClusters),col=brewer.pal(nClusters,"Set1"),pch=16,cex=2/3,bty='n')
-  plot(rd, col = pal[g], pch=16, asp = 1)
-  gid <- data$prior_information$groups_id
-  gid <- gid[match(colnames(counts),gid$cell_id),]
-  plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
-
-  pairs(rd, col=pal[g], pch=16)
+   rafalib::mypar(mfrow=c(1,2))
+   plot(rd, col = wes_palette("Darjeeling1", 10, type="continuous")[cl], pch=16, asp = 1)
+   legend("topleft",legend=as.character(1:nClusters),col=wes_palette("Darjeeling1", 10, type="continuous"),pch=16,cex=2/3,bty='n')
+   plot(rd, col = brewer.pal(8,"Dark2")[as.numeric(as.factor(gid$group_id))+1], pch=16, asp = 1)
+  #
+  # rafalib::mypar(mfrow=c(1,3))
+  # plot(rd, col = pal[cl], pch=16, asp = 1)
+  # legend("topleft",legend=as.character(1:nClusters),col=pal,pch=16,cex=2/3,bty='n')
+  # plot(rd, col = pal[g], pch=16, asp = 1)
+  # plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
 
   #lineages
   lin <- getLineages(rd, cl, start.clus=datasetClusters$start[datasetIter], end.clus=c(datasetClusters$end1[datasetIter], datasetClusters$end2[datasetIter]))
-  #plot(rd, col = pal[g], pch=16, asp = 1)
-  #lines(lin,lwd=2)
+  plot(rd, col = pal[g], pch=16, asp = 1)
+  lines(lin,lwd=2)
   #curves
   crv <- getCurves(lin)
   plot(rd, col = pal[g], pch=16, asp = 1)
   lines(crv, lwd=2, col="black")
-#} #for lineages.pdf
-#dev.off()
-
-  # get milestones
-  gid <- data$prior_information$groups_id
-  gid <- gid[match(colnames(counts),gid$cell_id),]
-  #plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
+# } #for lineages.pdf
+# dev.off()
 
   ### fit smoothers on raw data
   cWeights <- slingCurveWeights(crv)
@@ -77,14 +75,14 @@ for(datasetIter in 1:10){
 
   # Test for differences at end point
   endRes <- diffEndTest(gamList)
-  hist(endRes$pvalue)
+  #hist(endRes$pvalue)
   deGenesEndGam <- rownames(counts)[which(p.adjust(endRes$pvalue,"fdr")<=0.05)]
   mean(falseGenes%in%deGenesEndGam) #TPR
   mean(!deGenesEndGam%in%falseGenes) #FDR
 
   ## tradeR pattern test
   resPattern <- patternTest(gamList)
-  hist(resPattern$pval)
+  #hist(resPattern$pval)
   deGenesPattern <- rownames(counts)[which(p.adjust(resPattern$pval,"fdr")<=0.05)]
   length(deGenesPattern)
   mean(falseGenes%in%deGenesPattern) #TPR
@@ -121,41 +119,44 @@ for(datasetIter in 1:10){
   featureInfo <- data.frame(gene_short_name=rownames(counts))
   rownames(featureInfo) <- rownames(counts)
   fd <- new("AnnotatedDataFrame", featureInfo)
-  cds <- newCellDataSet(cellData=counts, featureData=fd, expressionFamily=negbinomial.size())
+  cds <- newCellDataSet(cellData=normCounts, featureData=fd, expressionFamily=negbinomial.size())
   cds <- estimateSizeFactors(cds)
   cds <- estimateDispersions(cds)
   cds <- reduceDimension(cds)
   cds <- orderCells(cds)
-  plot_cell_trajectory(cds, color_by = "State")
+  print(plot_cell_trajectory(cds, color_by = "State"))
   if(nlevels(phenoData(cds)$State)==1){
     BEAM_res <- data.frame(pval=rep(1,nrow(counts)))
   } else {
     BEAM_res <- BEAM(cds,  cores = 1)
   }
 
+  if(nlevels(phenoData(cds)$State)==1){
+    resEndMon <- data.frame(pvalue=rep(1,nrow(counts)))
+    resPatternMon <- data.frame(pvalue=rep(1,nrow(counts)))
+  } else {
+    # tradeR downstream of Monocle 2
+    phenoData(cds)$milestone <- gid$group_id
+    print(plot_cell_trajectory(cds, color_by = "milestone"))
+    plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1) ; legend("topleft", paste0("M",1:4), col=2:5,pch=16)
+    #M2 and M4 are the branches we need to compare.
+    # these correspond to State 1 and State 6.
 
+    ptMon <- matrix(phenoData(cds)$Pseudotime, nrow=ncol(counts), ncol=2, byrow=FALSE)
+    stateMon <- phenoData(cds)$State
+    #plot(x=ptMon,y=stateMon)
+    # use milestones to derive true weights.
+    # use slingshot weights to identify curves.
+    cellWeightsMon <- matrix(0, nrow=ncol(cds), ncol=2)
+    rownames(cellWeightsMon) <- colnames(counts)
+    cellWeightsMon[gid$group_id %in% c("M1","M3"),] <- c(1/2,1/2)
+    cellWeightsMon[gid$group_id %in% "M2",which.max(colSums(cWeights[gid$group_id %in% "M2",]))] <- 1
+    cellWeightsMon[gid$group_id %in% "M4",which.max(colSums(cWeights[gid$group_id %in% "M4",]))] <- 1
 
-  # tradeR downstream of Monocle 2
-  phenoData(cds)$milestone <- gid$group_id
-  plot_cell_trajectory(cds, color_by = "milestone")
-  plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1) ; legend("topleft", paste0("M",1:4), col=2:5,pch=16)
-  #M2 and M4 are the branches we need to compare.
-  # these correspond to State 1 and State 6.
-
-  ptMon <- matrix(phenoData(cds)$Pseudotime, nrow=ncol(counts), ncol=2, byrow=FALSE)
-  stateMon <- phenoData(cds)$State
-  #plot(x=ptMon,y=stateMon)
-  # use milestones to derive true weights.
-  # use slingshot weights to identify curves.
-  cellWeightsMon <- matrix(0, nrow=ncol(cds), ncol=2)
-  rownames(cellWeightsMon) <- colnames(counts)
-  cellWeightsMon[gid$group_id %in% c("M1","M3"),] <- c(1/2,1/2)
-  cellWeightsMon[gid$group_id %in% "M2",which.max(colSums(cWeights[gid$group_id %in% "M2",]))] <- 1
-  cellWeightsMon[gid$group_id %in% "M4",which.max(colSums(cWeights[gid$group_id %in% "M4",]))] <- 1
-
-  gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
-  resPatternMon <- patternTest(gamListMon)
-  resEndMon <- diffEndTest(gamListMon)
+    gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
+    resPatternMon <- patternTest(gamListMon)
+    resEndMon <- diffEndTest(gamListMon)
+  }
 
   # tradeR on true time and weights
   ### tradeR on true pseudotime
@@ -171,11 +172,12 @@ for(datasetIter in 1:10){
   sum(padjPatternTrueTime<=0.05, na.rm=TRUE)
 
   # GPfates
-  logCpm <- edgeR::cpm(counts, prior.count=.125, log=TRUE)
+  logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
   sampleInfo <- data.frame(global_pseudotime=truePseudotime)
   rownames(sampleInfo) <- colnames(counts)
   write.table(logCpm, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/simDyntoyLogCpm.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
   write.table(sampleInfo, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/sampleInfoSimDyntoy.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
+  write.table(datasetIter, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/currIter.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
   #run with 20190206_runGPfates_simDyntoy.py
   system("python3 /Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/20190207_runGPfates_simDyntoy_bifurcating4.py")
   # import GPfates output

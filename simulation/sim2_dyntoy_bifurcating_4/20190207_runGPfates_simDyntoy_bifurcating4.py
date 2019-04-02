@@ -5,6 +5,7 @@ from GPfates import GPfates
 logexp = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/simDyntoyLogCpm.txt', index_col=0, sep=' ')
 sInfo = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/sampleInfoSimDyntoy.txt', index_col=0, sep=' ')
 
+
 # run GPfates by feeding it the true pseudotime.
 m = GPfates.GPfates(sInfo, logexp, pseudotime_column=1)
 # perform GPLVM
@@ -12,10 +13,15 @@ m.dimensionality_reduction()
 # store reduced dimensions
 m.store_dr()
 m.model_fates(t='global_pseudotime')
-# plot
-#m.make_fates_viz()
-#m.fates_viz.plot()
-#GPfates.plt.show()
+# save plot
+currIter = pd.read_csv('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/currIter.txt', sep=" ", header=None)
+cc = currIter[0]
+cc = cc[0]
+d = 'dataset'
+curd = d + str(cc)
+m.make_fates_viz()
+m.fates_viz.plot()
+GPfates.plt.savefig('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/GPfates_' + curd + '.png')
 
 # identify bifurcation
 p = m.identify_bifurcation_point()

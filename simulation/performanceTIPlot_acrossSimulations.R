@@ -40,7 +40,7 @@ theme_update(legend.position = "none",
 ### bifurcating dyntoy plot  ####
 dir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
 cobraFiles <- list.files(dir, pattern="cobra*", full.names=TRUE)
-
+cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
 
 plotPerformanceCurve <- function(cobraObject){
   cobraObject <- calculate_adjp(cobraObject)
@@ -67,9 +67,9 @@ for(ii in 1:length(cobraFiles)){
     assign(paste0("bifplot",ii),plotPerformanceCurve(cobra))
 }
 
-p1 <- plot_grid(bifplot1, bifplot2, bifplot3, bifplot4,
-          bifplot5, bifplot6, bifplot7, bifplot8,
-        nrow=2, ncol=4)
+p1 <- plot_grid(bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
+           bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
+        nrow=2, ncol=5)
 
 plotsBif <- sapply(cobraFiles, function(file){
   cobra <- readRDS(file)
@@ -103,24 +103,36 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
   }
 pal <- wes_palette("Zissou1", 12, type = "continuous")
 
-for(datasetIter in c(1,2,5:10)){
+for(datasetIter in c(1:10)){
 
   data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
   counts <- t(data$counts)
+
+  # get milestones
+  gid <- data$prior_information$groups_id
+  gid <- gid[match(colnames(counts),gid$cell_id),]
+
+  pal <- wes_palette("Zissou1", 12, type = "continuous")
   truePseudotime <- data$prior_information$timecourse_continuous
   g <- Hmisc::cut2(truePseudotime,g=12)
+
   # quantile normalization
   normCounts <- FQnorm(counts)
+
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-  rd <- pca$x[,1:4]
+  rd <- pca$x[,1:3]
   ## cluster
-  set.seed(9)
-  nClusters <- 6
+  nClusters <- datasetClusters$nClusters[datasetIter]
+  set.seed(5)
   cl <- kmeans(rd, centers = nClusters)$cluster
+
   #lineages
   lin <- getLineages(rd, cl, start.clus=datasetClusters$start[datasetIter], end.clus=c(datasetClusters$end1[datasetIter], datasetClusters$end2[datasetIter]))
+  #curves
   crv <- getCurves(lin)
+  plot(rd, col = pal[g], pch=16, asp = 1)
+  lines(crv, lwd=2, col="black")
 
   ggTraj <- ggplot(as.data.frame(rd), aes(x = PC1, y = PC2)) +
     geom_point(col = pal[g]) +
@@ -132,10 +144,14 @@ for(datasetIter in c(1,2,5:10)){
   assign(paste0("trajplot",datasetIter),ggTraj)
 }
 
-p1 <- plot_grid(trajplot1, trajplot10, trajplot2, trajplot5,
-              bifplot1, bifplot2, bifplot3, bifplot4,
-              trajplot6, trajplot7, trajplot8, trajplot9,
-          bifplot5, bifplot6, bifplot7, bifplot8,
-        nrow=4, ncol=4, rel_heights=c(0.8,1,0.8,1))
-pLeg <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pLeg
+p1 <- plot_grid(trajplot1, trajplot2,# trajplot3, trajplot4, trajplot5,
+              bifplot1, bifplot2,# bifplot3, bifplot4, bifplot5,
+        nrow=2, ncol=2, rel_heights=c(0.8,1,0.8,1))
+pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pLeg1
+
+p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
+                bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
+        nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
+pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pLeg2
