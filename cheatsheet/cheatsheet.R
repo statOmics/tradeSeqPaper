@@ -41,7 +41,7 @@ p <- ggplot(df, aes(x = x, y = y, col = factor(type))) +
 
 # predict and plot smoothers across the range
 for (jj in seq_len(nCurves)) {
-  df <- tradeR:::.getPredictRangeDf(m, jj, nPoints = nPoints)
+  df <- tradeSeq:::.getPredictRangeDf(m, jj, nPoints = nPoints)
   yhat <- predict(m, newdata = df, type = "response")
   p <- p +
     geom_line(data = data.frame(x = df[, paste0("t", jj)],

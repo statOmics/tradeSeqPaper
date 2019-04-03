@@ -43,22 +43,22 @@ cell_type_color <- c("Basophils" = "#E088B8",
 DelayedArray:::set_verbose_block_processing(TRUE)
 
 # Passing a higher value will make some computations faster but use more memory. Adjust with caution!
-options(DelayedArray.block.size=1000e6)
+options(DelayedArray.block.size = 1000e6)
 
 ### added by kvdb: remove cells not part of trajectory
 #### remove dendritic cells
 table(phenoData(cds)$cell_type2)
-cds <- cds[,!phenoData(cds)$cell_type2=="Dendritic cells"]
+cds <- cds[, !phenoData(cds)$cell_type2 == "Dendritic cells"]
 #### remove Eosinophls
-cds <- cds[,!phenoData(cds)$cell_type2=="Eosinophls"]
+cds <- cds[, !phenoData(cds)$cell_type2 == "Eosinophls"]
 
 cds <- estimateSizeFactors(cds)
 cds <- estimateDispersions(cds)
 cds <- preprocessCDS(cds, num_dim = 20)
 
-cds <- reduceDimension(cds, reduction_method = 'UMAP')#, python_home="/Applications/miniconda3/bin")
+cds <- reduceDimension(cds, reduction_method = "UMAP") # , python_home="/Applications/miniconda3/bin")
 cds <- partitionCells(cds)
-cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
+cds <- learnGraph(cds, RGE_method = "SimplePPT")
 # note that plot is different from vignette: we dont find branching in erythrocytes
 plot_cell_trajectory(cds,
                      color_by = "cell_type2") +
@@ -67,9 +67,9 @@ plot_cell_trajectory(cds,
 
 ## fit trajectory with slingshot
 ### get UMAP coordinates
-x=1
-y=2
-theta=0
+x <- 1
+y <- 2
+theta <- 0
 #reduced_dim_coords <- reducedDimK(cds)
 S_matrix <- reducedDimS(cds)
  data_df <- data.frame(t(S_matrix[c(x, y), ]))
@@ -87,62 +87,65 @@ S_matrix <- reducedDimS(cds)
     # cn2 <- c("source_prin_graph_dim_1", "source_prin_graph_dim_2")
     # cn3 <- c("target_prin_graph_dim_1", "target_prin_graph_dim_2")
     data_df[, cn1] <- as.matrix(data_df[, cn1]) %*% t(rot_mat)
-plot(data_df[,1],data_df[,2], col=cell_type_color[phenoData(cds)$cell_type2], pch=16)
-
+plot(data_df[, 1], data_df[, 2], col = cell_type_color[phenoData(cds)$cell_type2], pch = 16)
 
 ### slingshot
 library(RColorBrewer)
-gcolpal <- c(brewer.pal(8,"Dark2")[-c(2,3,5)],brewer.pal(12,"Paired")[c(1,2,8,10,9)],brewer.pal(12,"Set3")[c(7,8,12)], brewer.pal(8, "Pastel2")[8], brewer.pal(11,"BrBG")[11], brewer.pal(11,"PiYG")[1], "cyan", "darkblue","darkorchid2", "brown1", "springgreen1", "deepskyblue4", "darkolivegreen","antiquewhite2")
+gcolpal <- c(brewer.pal(8, "Dark2")[-c(2, 3, 5)],
+             brewer.pal(12, "Paired")[c(1, 2, 8, 10, 9)],
+             brewer.pal(12, "Set3")[c(7, 8, 12)],
+             brewer.pal(8, "Pastel2")[8], brewer.pal(11, "BrBG")[11],
+             brewer.pal(11, "PiYG")[1], "cyan", "darkblue", "darkorchid2",
+             "brown1", "springgreen1", "deepskyblue4", "darkolivegreen",
+             "antiquewhite2")
 
 set.seed(97)
-rd <- data_df[,1:2]
+rd <- data_df[, 1:2]
 cl <- kmeans(rd, centers = 7)$cluster
-plot(rd, col = brewer.pal(9,"Set1")[cl], pch=16, asp = 1)
+plot(rd, col = brewer.pal(9, "Set1")[cl], pch = 16, asp = 1)
 library(slingshot)
-lin <- getLineages(rd, clusterLabels=cl, start.clus=4)
-plot(rd,col=gcolpal[cl], xlab="UMAP1", ylab="UMAP2")
-lines(lin, lwd=2)
+lin <- getLineages(rd, clusterLabels = cl, start.clus = 4)
+plot(rd, col = gcolpal[cl], xlab = "UMAP1", ylab = "UMAP2")
+lines(lin, lwd = 2)
 crv <- getCurves(lin)
-plot(rd,col=gcolpal[cl], main="color by cluster", xlab="UMAP1", ylab="UMAP2")
-lines(crv, lwd=2)
-plot(rd,col=cell_type_color[phenoData(cds)$cell_type2], main="color by cell type", xlab="UMAP1", ylab="UMAP2", pch=16)
-lines(crv, lwd=2)
+plot(rd, col = gcolpal[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2")
+lines(crv, lwd = 2)
+plot(rd, col = cell_type_color[phenoData(cds)$cell_type2], main = "color by cell type", xlab = "UMAP1", ylab = "UMAP2", pch = 16)
+lines(crv, lwd = 2)
 
-######## tradeR analysis
+######## tradeSeq analysis
 library(mgcv)
-library(tradeR)
-counts=exprs(cds)
-#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
+library(tradeSeq)
+counts <- exprs(cds)#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
-waldEndResPaul <- diffEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
-sum(p.adjust(waldEndResPaul$pvalue,"fdr")<=0.05)
-endGenes <- rownames(counts)[which(p.adjust(waldEndResPaul$pvalue,"fdr")<=0.05)]
+waldEndResPaul <- diffEndTest(gamListPaul, omnibus = TRUE, pairwise = FALSE)
+sum(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)
+endGenes <- rownames(counts)[which(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)]
 # pattern test: 2425 genes
 patternResPaul <- patternTest(gamListPaul)
-sum(p.adjust(patternResPaul$pvalue,"fdr")<=0.05, na.rm=TRUE)
-patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue,"fdr")<=0.05)]
+sum(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05, na.rm = TRUE)
+patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05)]
 # start point test: 2015 genes
-waldStartResPaul <- startVsEndTest(gamListPaul, omnibus=TRUE, pairwise=FALSE)
-sum(p.adjust(waldStartResPaul$pvalue,"fdr")<=0.05)
-startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue,"fdr")<=0.05)]
+waldStartResPaul <- startVsEndTest(gamListPaul, omnibus = TRUE, pairwise = FALSE)
+sum(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)
+startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)]
 
 ## plot 6 most significant progenitor genes
 library(SummarizedExperiment)
-png("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/rdPlotStartGenesPaul.png", units="in", width=12, height=9, res=330)
-oStart <- order(waldStartResPaul$waldStat, decreasing=TRUE)
-mypar(mfrow=c(2,3))
-k=0
-while(k<6){
-  k=k+1
-  cols <- colorRampPalette(c("yellow","red"))(20)
+png("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/rdPlotStartGenesPaul.png", units = "in", width = 12, height = 9, res = 330)
+oStart <- order(waldStartResPaul$waldStat, decreasing = TRUE)
+mypar(mfrow = c(2, 3))
+k <- 0
+while (k < 6) {
+  k <- k + 1
+  cols <- colorRampPalette(c("yellow", "red"))(20)
   geneId <- rownames(waldStartResPaul)[oStart[k]]
-  g <- Hmisc::cut2(log(assays(se)$counts[geneId,]+1), g=20)
-  plot(rd,col=cols[g], main=paste0("color by expression of ",geneId), xlab="UMAP1", ylab="UMAP2", pch=16, cex=2/3)
-  lines(crv, lwd=2, col="black")
+  g <- Hmisc::cut2(log(assays(se)$counts[geneId, ] + 1), g = 20)
+  plot(rd, col = cols[g], main = paste0("color by expression of ", geneId), xlab = "UMAP1", ylab = "UMAP2", pch = 16, cex = 2 / 3)
+  lines(crv, lwd = 2, col = "black")
 }
 dev.off()
-
 # 
 
 #### combine end point with pattern test
@@ -173,11 +176,11 @@ topTransient <- (compare %>% arrange(desc(transientScore)))
 
 
 ### old monocle: BEAM analysis
-detach("package:monocle", unload=TRUE)
-library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
+detach("package:monocle", unload = TRUE)
+library(monocle, lib.loc = "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
 DelayedArray:::set_verbose_block_processing(TRUE)
 # Passing a higher value will make some computations faster but use more memory. Adjust with caution!
-options(DelayedArray.block.size=1000e6)
+options(DelayedArray.block.size = 1000e6)
 cds <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS")))
 pData(cds)$cell_type2 <- plyr::revalue(as.character(pData(cds)$cluster),
                                         c("1" = 'Erythrocyte',
@@ -210,33 +213,35 @@ cell_type_color <- c("Basophils" = "#E088B8",
                     "Megakaryocytes" = "#ACC436",
                     "Neutrophils" = "#F5918A",
                     'NA' = '#000080')
-cds <- cds[,!phenoData(cds)$cell_type2=="Dendritic cells"]
+cds <- cds[, !phenoData(cds)$cell_type2 == "Dendritic cells"]
 #### remove Eosinophls
-cds <- cds[,!phenoData(cds)$cell_type2=="Eosinophls"]
+cds <- cds[, !phenoData(cds)$cell_type2 == "Eosinophls"]
 
 ### Monocle BEAM analysis
 counts <- exprs(cds)
 pd <- phenoData(cds)
 fd <- featureData(cds)
-cds2 <- newCellDataSet(counts, phenoData=pd, featureData=fd,
-                expressionFamily=VGAM::negbinomial.size())
+cds2 <- newCellDataSet(counts,
+  phenoData = pd, featureData = fd,
+  expressionFamily = VGAM::negbinomial.size()
+)
 cds2 <- estimateSizeFactors(cds2)
 cds2 <- estimateDispersions(cds2)
 cds2 <- reduceDimension(cds2, max_components = 2, method = 'ICA')
-cds2 <- orderCells(cds2, num_paths=2)
+cds2 <- orderCells(cds2, num_paths = 2)
 plot_cell_trajectory(cds2, color_by = "State")
-BEAM_res <- BEAM(cds2,  cores = 1)
-sum(BEAM_res$qval<0.05)
+BEAM_res <- BEAM(cds2, cores = 1)
+sum(BEAM_res$qval < 0.05)
 #save(BEAM_res,file="~/BEAM_resMonocleOldPaulEtal.rda")
 
 
 ### get ICA coordinates and slingshot for plot
 library(dplyr)
-x=1
-y=2
-theta=0
+x <- 1
+y <- 2
+theta <- 0
 S_matrixICA <- reducedDimS(cds2)
-plot(t(S_matrixICA[1:2,]), col=cell_type_color[phenoData(cds2)$cell_type2], pch=16)
+plot(t(S_matrixICA[1:2, ]), col = cell_type_color[phenoData(cds2)$cell_type2], pch = 16)
 
 ### slingshot
 library(RColorBrewer)
@@ -246,16 +251,17 @@ set.seed(97)
 data_df <- t(S_matrixICA[1:2,])
 rdICA <- data_df
 clICA <- kmeans(rdICA, centers = 7)$cluster
-plot(rdICA, col = brewer.pal(9,"Set1")[clICA], pch=16, asp = 1) ; legend("bottomright", as.character(1:7), col=brewer.pal(9,"Set1")[1:7], pch=16, bty="n", cex=2/3)
+plot(rdICA, col = brewer.pal(9, "Set1")[clICA], pch = 16, asp = 1)
+legend("bottomright", as.character(1:7), col = brewer.pal(9, "Set1")[1:7], pch = 16, bty = "n", cex = 2 / 3)
 library(slingshot)
-linICA <- getLineages(rdICA, clusterLabels=clICA, start.clus=4)
-plot(rdICA,col=gcolpal[clICA], xlab="ICA1", ylab="ICA2")
-lines(linICA, lwd=2)
+linICA <- getLineages(rdICA, clusterLabels = clICA, start.clus = 4)
+plot(rdICA, col = gcolpal[clICA], xlab = "ICA1", ylab = "ICA2")
+lines(linICA, lwd = 2)
 crvICA <- getCurves(linICA)
-plot(rdICA,ICAcol=gcolpal[clICA], main="color by cluster", xlab="ICA1", ylab="ICA2")
-lines(crvICA, lwd=2)
-plot(rdICA,col=cell_type_color[phenoData(cds2)$cell_type2], main="color by cell type", xlab="ICA1", ylab="ICA2", pch=16)
-lines(crvICA, lwd=2)
+plot(rdICA, ICAcol = gcolpal[clICA], main = "color by cluster", xlab = "ICA1", ylab = "ICA2")
+lines(crvICA, lwd = 2)
+plot(rdICA, col = cell_type_color[phenoData(cds2)$cell_type2], main = "color by cell type", xlab = "ICA1", ylab = "ICA2", pch = 16)
+lines(crvICA, lwd = 2)
 
 
 
@@ -301,26 +307,26 @@ d <- calcNormFactors(d)
 #clF <- as.factor(cl)
 #clF <- relevel(clF,ref=4) #set progenitor as ref
 ct <- as.factor(phenoData(cds)$cell_type2)
-ct <- relevel(ct, ref="Multipotent progenitors")
+ct <- relevel(ct, ref = "Multipotent progenitors")
 design <- model.matrix(~ct)
 d <- estimateDisp(d, design)
 plotBCV(d)
 fit <- glmFit(d, design)
 
-#leukocyte clusters: 4 6 3 5 7
-#erythrocyte clusters: 4 2 1
-Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=5)
+# leukocyte clusters: 4 6 3 5 7
+# erythrocyte clusters: 4 2 1
+Lleuk <- matrix(0, nrow = ncol(fit$coefficients), ncol = 5)
 rownames(Lleuk) <- colnames(fit$coefficients)
-Lleuk[c("ctErythrocyte","ctBasophils"),1] <- c(1,-1)
-Lleuk[c("ctErythrocyte","ctGMP"),2] <- c(1,-1)
-Lleuk[c("ctErythrocyte","ctMegakaryocytes"),3] <- c(1,-1)
-Lleuk[c("ctErythrocyte","ctMonocytes"),4] <- c(1,-1)
-Lleuk[c("ctErythrocyte","ctNeutrophils"),5] <- c(1,-1)
-lrtLeuk <- glmLRT(fit,contrast=Lleuk)
-sum(p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05)
+Lleuk[c("ctErythrocyte", "ctBasophils"), 1] <- c(1, -1)
+Lleuk[c("ctErythrocyte", "ctGMP"), 2] <- c(1, -1)
+Lleuk[c("ctErythrocyte", "ctMegakaryocytes"), 3] <- c(1, -1)
+Lleuk[c("ctErythrocyte", "ctMonocytes"), 4] <- c(1, -1)
+Lleuk[c("ctErythrocyte", "ctNeutrophils"), 5] <- c(1, -1)
+lrtLeuk <- glmLRT(fit, contrast = Lleuk)
+sum(p.adjust(lrtLeuk$table$PValue, "fdr") <= 0.05)
 
 ## neutrophil vs erythrocytes is most analogous to diffEndTest.
-lrtLeukNeutEry <- glmLRT(fit,contrast=Lleuk[,5])
+lrtLeukNeutEry <- glmLRT(fit, contrast = Lleuk[, 5])
 
 
 ### gene set enrichment
@@ -328,12 +334,12 @@ lrtLeukNeutEry <- glmLRT(fit,contrast=Lleuk[,5])
 library(openxlsx)
 gs <- read.xlsx("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/1-s2.0-S221367111630131X-mmc6.xlsx")
 #gs <- gs[gs$Lineage%in%c("Neutrophil Lineage", "Erythrocyte Lineage"),]
-gs <- gs[gs$GeneSymbol%in%rownames(counts),]
+gs <- gs[gs$GeneSymbol %in% rownames(counts), ]
 table(gs$Lineage)
 
 gsList <- c()
-for(i in 1:length(unique(gs$Lineage))){
-  gsList[[i]] <- gs$GeneSymbol[gs$Lineage==unique(gs$Lineage)[i]]
+for (i in 1:length(unique(gs$Lineage))) {
+  gsList[[i]] <- gs$GeneSymbol[gs$Lineage == unique(gs$Lineage)[i]]
 }
 names(gsList) <- unique(gs$Lineage)
 
@@ -344,34 +350,34 @@ names(gsList) <- unique(gs$Lineage)
 
 ## use ranks of genes as input for fgsea.
 library(fgsea)
-ranksTradeR <- rank(waldEndResPaul$waldStat)
-names(ranksTradeR) <- rownames(waldEndResPaul)
-gseaTrader <- fgsea(gsList, ranksTradeR, nperm=1e5, minSize=5)
-gseaTrader
+rankstradeSeq <- rank(waldEndResPaul$waldStat)
+names(rankstradeSeq) <- rownames(waldEndResPaul)
+gseatradeSeq <- fgsea(gsList, rankstradeSeq, nperm = 1e5, minSize = 5)
+gseatradeSeq
 
 pvalBeam <- BEAM_res$pval
 names(pvalBeam) <- rownames(BEAM_res)
 ranksBEAM <- rank(pvalBeam)
-gseaBEAM <- fgsea(gsList, ranksBEAM, nperm=1e4, minSize=5)
+gseaBEAM <- fgsea(gsList, ranksBEAM, nperm = 1e4, minSize = 5)
 gseaBEAM
 
 # edgeR omnibus test
 ranksEdgeR <- rank(lrtLeuk$table$LR)
 names(ranksEdgeR) <- rownames(lrtLeuk$table)
-gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e5, minSize=5)
+gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm = 1e5, minSize = 5)
 gseaEdgeR
 
 # edgeR neutrophil vs erythrocyte
 ranksEdgeR <- rank(lrtLeukNeutEry$table$LR)
 names(ranksEdgeR) <- rownames(lrtLeukNeutEry$table)
-gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm=1e5, minSize=5)
+gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm = 1e5, minSize = 5)
 gseaEdgeR
 
 
 
 
 
-## GSEA for erythrocytes is significant for tradeR, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
+## GSEA for erythrocytes is significant for tradeSeq, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
 
 ########### Cluster significant pattern genes
 library(clusterExperiment)
@@ -407,18 +413,19 @@ library(clusterExperiment)
 #yHatOnlyPat <- do.call(rbind,lapply(gamListPaul[patternGenes], predict, type="link"))
 #yhatOnlyPatScaled <- t(scale(t(yHatOnlyPat)))
 # dont cluster the fitted values but plot the 100point smoothers
-nPoints=100
+nPoints <- 100
 df1 <- .getPredictRangeDf(gamListPaul[[1]], 1, nPoints = nPoints)
 df2 <- .getPredictRangeDf(gamListPaul[[1]], 2, nPoints = nPoints)
-y1 <- do.call(rbind,lapply(gamListPaul[patternGenes], predict, newdata=df1, type="link"))
-y2 <- do.call(rbind,lapply(gamListPaul[patternGenes], predict, newdata=df2, type="link"))
-yhatPat <- cbind(y1,y2)
+y1 <- do.call(rbind, lapply(gamListPaul[patternGenes], predict, newdata = df1, type = "link"))
+y2 <- do.call(rbind, lapply(gamListPaul[patternGenes], predict, newdata = df2, type = "link"))
+yhatPat <- cbind(y1, y2)
 yhatPatScaled <- t(scale(t(yhatPat)))
 
-rsec <- RSEC(t(yhatPatScaled[1:500,]), isCount = FALSE,
-    reduceMethod="PCA", nReducedDims=10,combineMinSize=6,
-    ncores=2, random.seed=176201, verbose=TRUE)
-
+rsec <- RSEC(t(yhatPatScaled[1:500, ]),
+  isCount = FALSE,
+  reduceMethod = "PCA", nReducedDims = 10, combineMinSize = 6,
+  ncores = 2, random.seed = 176201, verbose = TRUE
+)
 #rsec <- RSEC(t(yhatPatScaled), isCount = FALSE,
 #    reduceMethod="PCA", nReducedDims=50,combineMinSize=10,
 #    ncores=1, random.seed=176201, verbose=TRUE)
@@ -430,33 +437,33 @@ plotCoClustering(rsec)
 # so, I set clusterFeaturesData=FALSE to not cluster the cells and order along pseudotime.
 # I set clusterSamplesData to TRUE to cluster the genes.
 ## first take the mean across genes within a cluster!
-plotHeatmap(rsec, clusterFeaturesData=FALSE)
+plotHeatmap(rsec, clusterFeaturesData = FALSE)
 
-mypar(mfrow=c(3,3), bty='l')
+mypar(mfrow = c(3, 3), bty = "l")
 cUniq <- unique(clusterLabels)
-cUniq <- cUniq[!cUniq==-1]
-for(xx in cUniq){
-  cId <- which(clusterLabels==xx)
-  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Normalized expression")
-  for(ii in 1:length(cId)){
+cUniq <- cUniq[!cUniq == -1]
+for (xx in cUniq) {
+  cId <- which(clusterLabels == xx)
+  plot(x = 1:100, y = rep(range(yhatPatScaled[cId, ]), 50), type = "n", main = paste0("Cluster ", xx), xlab = "Pseudotime", ylab = "Normalized expression")
+  for (ii in 1:length(cId)) {
     geneId <- rownames(yhatPatScaled)[cId[ii]]
-    yhatGene <- yhatPatScaled[geneId,]
-    lines(x=1:100, y=yhatGene[1:100], col="orange", lwd=2)
-    lines(x=1:100, y=yhatGene[101:200], col="darkseagreen3", lwd=2)
+    yhatGene <- yhatPatScaled[geneId, ]
+    lines(x = 1:100, y = yhatGene[1:100], col = "orange", lwd = 2)
+    lines(x = 1:100, y = yhatGene[101:200], col = "darkseagreen3", lwd = 2)
   }
 }
 
 ## for cheatsheet
-mypar(mfrow=c(2,2), mar = c(2.5, 2.8, 1.6, 1.1), cex.lab=1.8, cex.axis=1.25, cex.main=1.4)
-for(xx in 23:26){
-  cId <- which(clusterLabels==xx)
-  plot(x=seq(0,1,length=100),y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx-22), xlab="Pseudotime", ylab="Normalized expression", xaxt='n')
-  axis(1, at=c(0, 0.3, 0.6, 0.9), cex.axis=1.25, cex.lab=1.5)
-  for(ii in 1:length(cId)){
+mypar(mfrow = c(2, 2), mar = c(2.5, 2.8, 1.6, 1.1), cex.lab = 1.8, cex.axis = 1.25, cex.main = 1.4)
+for (xx in 23:26) {
+  cId <- which(clusterLabels == xx)
+  plot(x = seq(0, 1, length = 100), y = rep(range(yhatPatScaled[cId, ]), 50), type = "n", main = paste0("Cluster ", xx - 22), xlab = "Pseudotime", ylab = "Normalized expression", xaxt = "n")
+  axis(1, at = c(0, 0.3, 0.6, 0.9), cex.axis = 1.25, cex.lab = 1.5)
+  for (ii in 1:length(cId)) {
     geneId <- rownames(yhatPatScaled)[cId[ii]]
-    yhatGene <- yhatPatScaled[geneId,]
-    lines(x=seq(0,1,length=100), y=yhatGene[1:100], col="#377EB8", lwd=2)
-    lines(x=seq(0,0.9,length=100), y=yhatGene[101:200], col="#FF7F00", lwd=2)
+    yhatGene <- yhatPatScaled[geneId, ]
+    lines(x = seq(0, 1, length = 100), y = yhatGene[1:100], col = "#377EB8", lwd = 2)
+    lines(x = seq(0, 0.9, length = 100), y = yhatGene[101:200], col = "#FF7F00", lwd = 2)
   }
 }
 
@@ -498,64 +505,70 @@ plotSmoothersIk <- function(m, nPoints = 100, ...){
 
 ###### figure for paper
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul_v2.png", width=9, height=6, units="in", res=200)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul_v2.png", width = 9, height = 6, units = "in", res = 200)
 rafalib::mypar()
 # layout(matrix(c(1,1, 2,3, 8,9,
 #               1,1, 4,5, 10,11,
 #               1,1, 6,7, 12,13), nrow=3, ncol=6, byrow=TRUE))
-layout(matrix(c(1,1, 3,4, 9,10,
-                1,1, 3,4, 9,10,
-                1,1, 5,6, 11,12,
-                2,2, 5,6, 11,12,
-                2,2, 7,8, 13,14,
-                2,2, 7,8, 13,14), nrow=6, ncol=6, byrow=TRUE))
-par(cex.lab=1.25, cex.axis=1.1)
+layout(matrix(c(
+  1, 1, 3, 4, 9, 10,
+  1, 1, 3, 4, 9, 10,
+  1, 1, 5, 6, 11, 12,
+  2, 2, 5, 6, 11, 12,
+  2, 2, 7, 8, 13, 14,
+  2, 2, 7, 8, 13, 14
+), nrow = 6, ncol = 6, byrow = TRUE))
+par(cex.lab = 1.25, cex.axis = 1.1)
 
 ### panel A: ICA trajectory with cell types
-plot(rdICA, col=alpha(cell_type_color[phenoData(cds)$cell_type2],.8), pch=16, xlab="ICA1", ylab="ICA2")
-lines(crvICA@curves$curve1$s[order(crvICA@curves$curve1$lambda),], col="orange", lwd=4)
-lines(crvICA@curves$curve2$s[order(crvICA@curves$curve2$lambda),], col="darkseagreen3", lwd=4)
+plot(rdICA, col = alpha(cell_type_color[phenoData(cds)$cell_type2], .8), pch = 16, xlab = "ICA1", ylab = "ICA2")
+lines(crvICA@curves$curve1$s[order(crvICA@curves$curve1$lambda), ], col = "orange", lwd = 4)
+lines(crvICA@curves$curve2$s[order(crvICA@curves$curve2$lambda), ], col = "darkseagreen3", lwd = 4)
 legend("topright", unique(phenoData(cds)$cell_type2),
-       col = cell_type_color[unique(phenoData(cds)$cell_type2)],
-       pch = 16, cex = 4/5, bty = "n")
+  col = cell_type_color[unique(phenoData(cds)$cell_type2)],
+  pch = 16, cex = 4 / 5, bty = "n"
+)
 legend("bottomright", c("Leukocyte lineage", "Erythrocyte lineage"),
-       col = c("orange", "darkseagreen3"),
-      lwd=3, lty=1, bty = "n", cex=4/5)
-mtext("a", at=-13, font=2, cex=4/3)
+  col = c("orange", "darkseagreen3"),
+  lwd = 3, lty = 1, bty = "n", cex = 4 / 5
+)
+mtext("a", at = -13, font = 2, cex = 4 / 3)
 
 ### panel B: UMAP trajectory with cell types
-plot(rd,col=alpha(cell_type_color[phenoData(cds)$cell_type2],.8), pch=16, xlab="UMAP1", ylab="UMAP2")
-lines(crv@curves$curve1$s[order(crv@curves$curve1$lambda),], col="orange", lwd=4)
-lines(crv@curves$curve2$s[order(crv@curves$curve2$lambda),], col="darkseagreen3", lwd=4)
+plot(rd, col = alpha(cell_type_color[phenoData(cds)$cell_type2], .8), pch = 16, xlab = "UMAP1", ylab = "UMAP2")
+lines(crv@curves$curve1$s[order(crv@curves$curve1$lambda), ], col = "orange", lwd = 4)
+lines(crv@curves$curve2$s[order(crv@curves$curve2$lambda), ], col = "darkseagreen3", lwd = 4)
 legend("topright", unique(phenoData(cds)$cell_type2),
-       col = cell_type_color[unique(phenoData(cds)$cell_type2)],
-       pch = 16, cex = 4/5, bty = "n")
+  col = cell_type_color[unique(phenoData(cds)$cell_type2)],
+  pch = 16, cex = 4 / 5, bty = "n"
+)
 legend("bottomleft", c("Leukocyte lineage", "Erythrocyte lineage"),
-       col = c("orange", "darkseagreen3"),
-      lwd=3, lty=1, bty = "n", cex=4/5)
-mtext("b", at=-0.21, font=2, cex=4/3)
+  col = c("orange", "darkseagreen3"),
+  lwd = 3, lty = 1, bty = "n", cex = 4 / 5
+)
+mtext("b", at = -0.21, font = 2, cex = 4 / 3)
 
 ### panel C: four interesting genes involved in heamatopoiesis.
-palette(c("orange","darkseagreen3"))
-plotSmoothersIk(gamListPaul[["Prtn3"]], main="Prtn3")
-mtext("c", at=-0.5, font=2, cex=4/3)
-plotSmoothersIk(gamListPaul[["Mpo"]], main="Mpo", ylim=c(0,5))
-plotSmoothersIk(gamListPaul[["Car2"]], main="Car2", ylim=c(0,5))
-plotSmoothersIk(gamListPaul[["Ctsg"]], main="Ctsg", ylim=c(0,5))
-plotSmoothersIk(gamListPaul[["Elane"]], main="Elane", ylim=c(0,5))
-plotSmoothersIk(gamListPaul[["Car1"]], main="Car1", ylim=c(0,5))
+palette(c("orange", "darkseagreen3"))
+plotSmoothersIk(gamListPaul[["Prtn3"]], main = "Prtn3")
+mtext("c", at = -0.5, font = 2, cex = 4 / 3)
+plotSmoothersIk(gamListPaul[["Mpo"]], main = "Mpo", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Car2"]], main = "Car2", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Ctsg"]], main = "Ctsg", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Elane"]], main = "Elane", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Car1"]], main = "Car1", ylim = c(0, 5))
 
 ### panel D: clusters of gene families
 #mypar(mfrow=c(3,2), bty='l')
-for(xx in 1:6){
-  cId <- which(clusterLabels==xx)
-  plot(x=1:100,y=rep(range(yhatPatScaled[cId,]),50), type="n", main=paste0("Cluster ",xx), xlab="Pseudotime", ylab="Standardized log(count + 1)", ylim=c(-3,2.5))
-  if(xx==1) mtext("d", at=-40, font=2, cex=4/3)
-  for(ii in 1:length(cId)){
+for (xx in 1:6) {
+  cId <- which(clusterLabels == xx)
+  plot(x = 1:100, y = rep(range(yhatPatScaled[cId, ]), 50), type = "n", main = paste0("Cluster ", xx), xlab = "Pseudotime", ylab = "Standardized log(count + 1)", ylim = c(-3, 2.5))
+  if (xx == 1) mtext("d", at = -40, font = 2, cex = 4 / 3)
+  for (ii in 1:length(cId)) {
     geneId <- rownames(yhatPatScaled)[cId[ii]]
-    yhatGene <- yhatPatScaled[geneId,]
-    lines(x=1:100, y=yhatGene[1:100], col="orange", lwd=2)
-    lines(x=1:100, y=yhatGene[101:200], col="darkseagreen3", lwd=2)
+    yhatGene <- yhatPatScaled[geneId, ]
+    lines(x = 1:100, y = yhatGene[1:100], col = "orange", lwd = 2)
+    lines(x = 1:100, y = yhatGene[101:200], col = "darkseagreen3", lwd = 2)
   }
 }
 dev.off()
@@ -565,27 +578,27 @@ dev.off()
 #### cluster-based vs continuous DE #######
 ############################################
 # clusters contain a mixture of cell types
-table(phenoData(cds)$cell_type2,cl[sampleNames(phenoData(cds))])
+table(phenoData(cds)$cell_type2, cl[sampleNames(phenoData(cds))])
 # this leads to high within-cluster variability
 # edgeR
 library(edgeR)
 d <- DGEList(exprs(cds))
 d <- calcNormFactors(d)
 cl <- as.factor(cl)
-cl <- relevel(cl,ref=4) #set progenitor as ref
+cl <- relevel(cl, ref = 4) # set progenitor as ref
 design <- model.matrix(~cl)
 d <- estimateDisp(d, design)
 plotBCV(d)
 fit <- glmFit(d, design)
 
 # plot clusters
-plot(rd,col=gcolpal[cl], main="color by cluster", xlab="UMAP1", ylab="UMAP2", pch=16) ; legend("topright",as.character(1:7),col=gcolpal[1:7], pch=16)
-lines(crv, lwd=2)
+plot(rd, col = gcolpal[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2", pch = 16)
+legend("topright", as.character(1:7), col = gcolpal[1:7], pch = 16)
+lines(crv, lwd = 2)
 
 # check for association in leukocyte lineage by cluster-based DE
 #leukocyte clusters: 4 6 3 5 7
-Lleuk <- matrix(0,nrow=ncol(fit$coefficients), ncol=10)
-rownames(Lleuk) <- colnames(fit$coefficients)
+Lleuk <- matrix(0, nrow = ncol(fit$coefficients), ncol = 10)rownames(Lleuk) <- colnames(fit$coefficients)
 Lleuk["cl6",1] <- 1
 Lleuk["cl3",2] <- 1
 Lleuk["cl5",3] <- 1
@@ -597,26 +610,29 @@ Lleuk[c("cl3","cl5"),8] <- c(1,-1)
 Lleuk[c("cl3","cl7"),9] <- c(1,-1)
 Lleuk[c("cl5","cl7"),10] <- c(1,-1)
 
-lrtLeuk <- glmLRT(fit,contrast=Lleuk)
+lrtLeuk <- glmLRT(fit, contrast = Lleuk)
 
-### genes identified with tradeR but not with edgeR
-deEdgeRLeuk <- rownames(lrtLeuk)[p.adjust(lrtLeuk$table$PValue,"fdr")<=0.05]
-nullEdgeRLeuk <- rownames(lrtLeuk)[!rownames(lrtLeuk)%in%deEdgeRLeuk]
+### genes identified with tradeSeq but not with edgeR
+deEdgeRLeuk <- rownames(lrtLeuk)[p.adjust(lrtLeuk$table$PValue, "fdr") <= 0.05]
+nullEdgeRLeuk <- rownames(lrtLeuk)[!rownames(lrtLeuk) %in% deEdgeRLeuk]
 
-#pSmoothTradeR <- getSmootherPvalues(gamListPaul)
-#statSmoothTradeR <- getSmootherTestStats(gamListPaul)
-pSmoothTradeRIct <- getSmootherPvalues(gamListPaulIct)
-statSmoothTradeRIct <- getSmootherTestStats(gamListPaulIct)
-deTradeRLeuk <- rownames(pSmoothTradeRIct)[p.adjust(pSmoothTradeRIct[,1],"fdr")<=0.05]
+# pSmoothtradeSeq <- getSmootherPvalues(gamListPaul)
+# statSmoothtradeSeq <- getSmootherTestStats(gamListPaul)
+pSmoothtradeSeqIct <- getSmootherPvalues(gamListPaulIct)
+statSmoothtradeSeqIct <- getSmootherTestStats(gamListPaulIct)
+detradeSeqLeuk <- rownames(pSmoothtradeSeqIct)[p.adjust(pSmoothtradeSeqIct[, 1], "fdr") <= 0.05]
 
-onlyTraderLeuk <- deTradeRLeuk[!deTradeRLeuk%in%deEdgeRLeuk]
+onlytradeSeqLeuk <- detradeSeqLeuk[!detradeSeqLeuk %in% deEdgeRLeuk]
 
-i=0
+i <- 0
+mypar(mfrow = c(1, 4))
+i <- i + 1
+plotSmoothers(gamListPaul[[onlytradeSeqLeuk[i]]])
+plot(gamListPaul[[onlytradeSeqLeuk[i]]])
+plotGeneCount(counts = counts, curve = crv, gene = onlytradeSeqLeuk[i], rd = rd)
+onlytradeSeqLeuk[i]
 
-mypar(mfrow=c(1,4))
-i=i+1 ; plotSmoothers(gamListPaul[[onlyTraderLeuk[i]]]) ; plot(gamListPaul[[onlyTraderLeuk[i]]]) ; plotGeneCount(counts=counts, curve=crv, gene=onlyTraderLeuk[i], rd=rd) ; onlyTraderLeuk[i]
-
-write.table(onlyTraderLeuk,file="~/onlyTraderLeuk.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(onlytradeSeqLeuk, file = "~/onlytradeSeqLeuk.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 
 # i=2, 64: gene with all-zero that's significantly associated with the lineage...
@@ -628,22 +644,26 @@ write.table(onlyTraderLeuk,file="~/onlyTraderLeuk.txt", row.names=FALSE, col.nam
 
 # erythrocyte lineage
 #erythrocyte clusters: 4 2 1
-Ler <- matrix(0,nrow=ncol(fit$coefficients), ncol=3)
+Ler <- matrix(0, nrow = ncol(fit$coefficients), ncol = 3)
 rownames(Ler) <- colnames(fit$coefficients)
-Ler["cl2",1] <- 1
-Ler["cl1",2] <- 1
-Ler[c("cl2","cl1"),3] <- c(1,-1)
-lrtEr <- glmLRT(fit,contrast=Ler)
-deEdgeREr <- rownames(lrtEr)[p.adjust(lrtEr$table$PValue,"fdr")<=0.05]
-deTradeREr <- rownames(pSmoothTradeRIct)[p.adjust(pSmoothTradeRIct[,2],"fdr")<=0.05]
-onlyTraderEr <- deTradeREr[!deTradeREr%in%deEdgeREr]
-onlyTraderEr <- onlyTraderEr[order(statSmoothTradeRIct[onlyTraderEr,2], decreasing=TRUE)]
+Ler["cl2", 1] <- 1
+Ler["cl1", 2] <- 1
+Ler[c("cl2", "cl1"), 3] <- c(1, -1)
+lrtEr <- glmLRT(fit, contrast = Ler)
+deEdgeREr <- rownames(lrtEr)[p.adjust(lrtEr$table$PValue, "fdr") <= 0.05]
+detradeSeqEr <- rownames(pSmoothtradeSeqIct)[p.adjust(pSmoothtradeSeqIct[, 2], "fdr") <= 0.05]
+onlytradeSeqEr <- detradeSeqEr[!detradeSeqEr %in% deEdgeREr]
+onlytradeSeqEr <- onlytradeSeqEr[order(statSmoothtradeSeqIct[onlytradeSeqEr, 2], decreasing = TRUE)]
 
 
 
-i=0
+i <- 0
 
-mypar(mfrow=c(1,4))
-i=i+1 ; plotSmoothers(gamListPaul[[onlyTraderEr[i]]]) ; plot(gamListPaul[[onlyTraderEr[i]]]) ; plotGeneCount(counts=counts, curve=crv, gene=onlyTraderEr[i], rd=rd) ; onlyTraderEr[i]
+mypar(mfrow = c(1, 4))
+i <- i + 1
+plotSmoothers(gamListPaul[[onlytradeSeqEr[i]]])
+plot(gamListPaul[[onlytradeSeqEr[i]]])
+plotGeneCount(counts = counts, curve = crv, gene = onlytradeSeqEr[i], rd = rd)
+onlytradeSeqEr[i]
 
-write.table(onlyTraderEr,file="~/onlyTraderEr.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(onlytradeSeqEr, file = "~/onlytradeSeqEr.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)

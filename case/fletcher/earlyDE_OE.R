@@ -1,5 +1,5 @@
 libs <- c("cowplot", "tidyverse", "clusterExperiment", "RColorBrewer", "mgcv", 
-          "tradeR", "slingshot", "curl")
+          "tradeSeq", "slingshot", "curl")
 suppressMessages(suppressWarnings(
   sapply(libs, require, warn.conflicts = FALSE,
          character.only = TRUE, quietly = TRUE)
@@ -7,7 +7,7 @@ suppressMessages(suppressWarnings(
 rm(libs)
 
 setwd("../OE")
-load("data/gamListOE_tradeR.rda")
+load("data/gamListOE_tradeSeq.rda")
 
 path <- "https://www.cell.com/cms/10.1016/j.stem.2017.04.003/attachment/f2c195e6-972c-41e7-9e94-d4907b217a9e/mmc3"
 curl_download(path, destfile = "data/OE_DE.xlsx")
