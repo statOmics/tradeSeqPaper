@@ -1,2 +1,2 @@
-# tradeRPaper
-Scripts to reproduce analyses of tradeR paper.
+# tradeSeqPaper
+Scripts to reproduce analyses of tradeSeq paper.

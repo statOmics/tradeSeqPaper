@@ -271,3 +271,8 @@ scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("
 
 pMeanBif <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanBif
+
+
+
+####### plot all Monocle trajectories
+pdfDir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
