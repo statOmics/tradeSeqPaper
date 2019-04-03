@@ -16,14 +16,14 @@ library(dplyr)
 ### prepare performance plots ####
 cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
           "#e41a1c", "#e78ac3", "#ff7f00")
-names(cols) <- c("tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
-                 "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
-                 "tradeR_Monocle2_pattern", "tradeR_slingshot_assoc", "Monocle3_assoc",
+names(cols) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
+                 "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
+                 "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
                  "BEAM", "GPfates", "edgeR")
 linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 6))
-names(linetypes) <- c("tradeR_slingshot_end", "tradeR_GPfates_end", "tradeR_Monocle2_end",
-                      "tradeR_slingshot_pattern", "tradeR_GPfates_pattern",
-                      "tradeR_Monocle2_pattern", "tradeR_slingshot_assoc", "Monocle3_assoc",
+names(linetypes) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
+                      "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
+                      "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
                       "BEAM", "GPfates", "edgeR")
 
 theme_set(theme_bw())
@@ -43,6 +43,7 @@ cobraFiles <- list.files(dir, pattern="cobra*", full.names=TRUE)
 cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
 
 plotPerformanceCurve <- function(cobraObject){
+  colnames(cobraObject@pval) <- gsub(colnames(cobraObject@pval),pattern="tradeR",replacement="tradeSeq")
   cobraObject <- calculate_adjp(cobraObject)
   cobraObject <- calculate_performance(cobraObject, binary_truth = "status")
 
@@ -144,14 +145,129 @@ for(datasetIter in c(1:10)){
   assign(paste0("trajplot",datasetIter),ggTraj)
 }
 
-p1 <- plot_grid(trajplot1, trajplot2,# trajplot3, trajplot4, trajplot5,
-              bifplot1, bifplot2,# bifplot3, bifplot4, bifplot5,
-        nrow=2, ncol=2, rel_heights=c(0.8,1,0.8,1))
+p1 <- plot_grid(trajplot1, trajplot2, trajplot3, trajplot4, trajplot5,
+              bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
+        nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg1
-
+dev.new()
 p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
                 bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg2
+
+### mean plot
+# Monocle (hence also BEAM) only finds one lineage in datasets 3 6 9
+# Monocle fails to separate the correct two lineages in datasets 4 7 8 10
+# GPfates only finds one lineage in datasets 3 4 8 9
+# iCOBRA does not seem to be consistent in the cut-offs, so difficult to merge different datasets => calculate FDP and TPR yourself.
+resList <- c()
+for(ii in 1:length(cobraFiles)){
+    cobra <- readRDS(cobraFiles[ii])
+    pvals <- pval(cobra)
+    colnames(pvals) <- gsub(colnames(pvals),pattern="tradeR",replacement="tradeSeq")
+    truths <- as.logical(truth(cobra)[,1])
+    hlp <- apply(pvals,2,function(x){
+      pOrder <- order(x,decreasing=FALSE)
+      padj <- p.adjust(x,"fdr")
+      fdr <- cumsum(!truths[pOrder])/(1:length(pOrder))
+      tpr <- cumsum(truths[pOrder])/sum(truths)
+      df <- data.frame(fdr=fdr, tpr=tpr, cutoff=(1:length(padj))/length(padj))
+    })
+    dfIter <- do.call(rbind,hlp)
+    dfIter$method=rep(colnames(pvals),each=nrow(pvals))
+    dfIter$dataset <- ii
+    resList[[ii]] <- dfIter
+}
+
+#### across all datasets
+library(tidyverse)
+df <- as_tibble(do.call(rbind,resList))
+df <- df %>% group_by(method,cutoff) %>%
+        summarize(meanTPR=mean(tpr,na.rm=TRUE),
+                meanFDR=mean(fdr,na.rm=TRUE))
+pMeanAll <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
+scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+                   minor_breaks = c(0:5) * .1) +
+scale_y_continuous(limits = c(0, 1)) +
+scale_color_manual(values = cols, breaks = names(cols)) +
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("All 10 datasets")
+
+pMeanLegAll <- plot_grid(pMeanAll, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pMeanLegAll
+
+#### only for datasets where each method found the correct trajectory
+resListCleaned <- resList
+# remove BEAM for datasets where Monocle2 did not find a branching
+resListCleaned[c(3,6,9)] <- lapply(resListCleaned[c(3,6,9)], function(df){
+  df[!df$method=="BEAM",]
+})
+# remove Monocle_tradeSeq for datasets where Monocle
+# (a) did not find a branching;
+# (b) wrongly assigned the two lineages to the same branch.
+resListCleaned[c(3,6,9,4,7,8,10)] <- lapply(resListCleaned[c(3,6,9,4,7,8,10)], function(df){
+  df[-grep(df$method, pattern="tradeSeq_Monocle2*"),]
+})
+# remove GPfates for datasets where they only find a single lineage
+resListCleaned[c(3,4,8,9)] <- lapply(resListCleaned[c(3,4,8,9)], function(df){
+  df[!df$method=="GPfates",]
+})
+# remove GPfates_tradeSeq for those datasets too.
+resListCleaned[c(3,4,8,9)] <- lapply(resListCleaned[c(3,4,8,9)], function(df){
+  df[-grep(df$method, pattern="tradeSeq_GPfates*"),]
+})
+
+library(tidyverse)
+df <- as_tibble(do.call(rbind,resListCleaned))
+df <- df %>% group_by(method,cutoff) %>%
+        summarize(meanTPR=mean(tpr,na.rm=TRUE),
+                meanFDR=mean(fdr,na.rm=TRUE))
+
+
+pMean <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
+scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+                   minor_breaks = c(0:5) * .1) +
+scale_y_continuous(limits = c(0, 1)) +
+scale_color_manual(values = cols, breaks = names(cols)) +
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("Only datasets with correct trajectory per method.")
+
+pMeanLeg <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pMeanLeg
+
+### pretending we don't know the truth: use every dataset where >1 lineage is discovered for every method.
+resListBif <- resList
+# remove BEAM for datasets where Monocle2 did not find a branching
+resListBif[c(3,6,9)] <- lapply(resListBif[c(3,6,9)], function(df){
+  df[!df$method=="BEAM",]
+})
+# remove Monocle_tradeSeq for datasets where Monocle
+# (a) did not find a branching;
+resListBif[c(3,6,9)] <- lapply(resListBif[c(3,6,9)], function(df){
+  df[-grep(df$method, pattern="tradeSeq_Monocle2*"),]
+})
+# remove GPfates for datasets where they only find a single lineage
+resListBif[c(3,4,8,9)] <- lapply(resListBif[c(3,4,8,9)], function(df){
+  df[!df$method=="GPfates",]
+})
+# remove GPfates_tradeSeq for those datasets too.
+resListBif[c(3,4,8,9)] <- lapply(resListBif[c(3,4,8,9)], function(df){
+  df[-grep(df$method, pattern="tradeSeq_GPfates*"),]
+})
+
+library(tidyverse)
+df <- as_tibble(do.call(rbind,resListBif))
+df <- df %>% group_by(method,cutoff) %>%
+        summarize(meanTPR=mean(tpr,na.rm=TRUE),
+                meanFDR=mean(fdr,na.rm=TRUE))
+
+
+pMean <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
+scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+                   minor_breaks = c(0:5) * .1) +
+scale_y_continuous(limits = c(0, 1)) +
+scale_color_manual(values = cols, breaks = names(cols)) +
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("Every bifurcating trajectory for each method.")
+
+pMeanBif <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pMeanBif
