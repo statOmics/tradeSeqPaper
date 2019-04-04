@@ -38,7 +38,7 @@ theme_update(legend.position = "none",
              axis.text.y = element_text(size = rel(.8)))
 
 ### bifurcating dyntoy plot  ####
-dir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
+dir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
 cobraFiles <- list.files(dir, pattern="cobra*", full.names=TRUE)
 cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
 
@@ -92,7 +92,7 @@ legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
 pLeg <- plot_grid(p1, legend_all, rel_heights=c(1,0.2), nrow=2, ncol=1)
 
 #### plot with trajectories
-datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
+datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
 
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
@@ -106,7 +106,7 @@ pal <- wes_palette("Zissou1", 12, type = "continuous")
 
 for(datasetIter in c(1:10)){
 
-  data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
+  data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
   counts <- t(data$counts)
 
   # get milestones
@@ -168,6 +168,7 @@ for(ii in 1:length(cobraFiles)){
     pvals <- pval(cobra)
     colnames(pvals) <- gsub(colnames(pvals),pattern="tradeR",replacement="tradeSeq")
     truths <- as.logical(truth(cobra)[,1])
+    # performance for all p-value based methods
     hlp <- apply(pvals,2,function(x){
       pOrder <- order(x,decreasing=FALSE)
       padj <- p.adjust(x,"fdr")
@@ -175,8 +176,16 @@ for(ii in 1:length(cobraFiles)){
       tpr <- cumsum(truths[pOrder])/sum(truths)
       df <- data.frame(fdr=fdr, tpr=tpr, cutoff=(1:length(padj))/length(padj))
     })
+    # performance for GPfates
+    scores <- score(cobra)
+    pOrder <- order(scores[,1],decreasing=TRUE)
+    fdr <- cumsum(!truths[pOrder])/(1:length(pOrder))
+    tpr <- cumsum(truths[pOrder])/sum(truths)
+    df <- data.frame(fdr=fdr, tpr=tpr, cutoff=(1:nrow(scores))/nrow(scores))
+    hlp$GPfates <- df
+    # summarize
     dfIter <- do.call(rbind,hlp)
-    dfIter$method=rep(colnames(pvals),each=nrow(pvals))
+    dfIter$method=rep(c(colnames(pvals),"GPfates"),each=nrow(pvals))
     dfIter$dataset <- ii
     resList[[ii]] <- dfIter
 }
@@ -272,7 +281,23 @@ scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("
 pMeanBif <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanBif
 
+# for intersection of datasets where each method found a correct trajectory; only datasets 1,2,5
+resListIst <- resList
+resListIst <- resListIst[c(1,2,5)]
+library(tidyverse)
+df <- as_tibble(do.call(rbind,resListIst))
+df <- df %>% group_by(method,cutoff) %>%
+        summarize(meanTPR=mean(tpr,na.rm=TRUE),
+                meanFDR=mean(fdr,na.rm=TRUE))
 
 
-####### plot all Monocle trajectories
-pdfDir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
+pMeanIst <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
+scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+                   minor_breaks = c(0:5) * .1) +
+scale_y_continuous(limits = c(0, 1)) +
+scale_color_manual(values = cols, breaks = names(cols)) +
+scale_linetype_manual(values = linetypes, breaks = names(linetypes))
+
+pMeanIstLeg <- plot_grid(pMeanIst, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+pMeanIstLeg
+saveRDS(pMeanIst,file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/pMeanIstBifurcation.rds")
