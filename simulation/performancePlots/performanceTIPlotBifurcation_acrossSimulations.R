@@ -2,7 +2,7 @@ library(here)
 library(slingshot)
 library(RColorBrewer)
 library(mgcv)
-library(tradeR)
+library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
@@ -83,11 +83,11 @@ pAll <- ggplot(resPlots[[1]],
                aes(x = FDP, y = TPR, col = method)) +
   geom_path(size = 1, aes(linetype = method)) +
   scale_color_manual(values = cols, breaks = names(cols)) +
-  scale_linetype_manual(values = linetypes, breaks = names(linetypes))  + guides(fill=guide_legend(nrow=3))
+  scale_linetype_manual(values = linetypes, breaks = names(linetypes))  + guides(col=guide_legend(nrow=3))
 
 legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
                            theme(legend.position = "bottom",
-                                 legend.key.width = unit(1.3, "cm")) + guides(fill=guide_legend(nrow=3)))
+                                 legend.key.width = unit(1.3, "cm")))
 
 pLeg <- plot_grid(pAll, legend_all, rel_heights=c(1,0.2), nrow=2, ncol=1)
 pLeg
@@ -142,7 +142,8 @@ for(datasetIter in c(1:10)){
     geom_path(x = crv@curves$curve1$s[crv@curves$curve1$ord, 1],
               y = crv@curves$curve1$s[crv@curves$curve1$ord, 2]) +
     geom_path(x = crv@curves$curve2$s[crv@curves$curve2$ord, 1],
-              y = crv@curves$curve2$s[crv@curves$curve2$ord, 2])
+              y = crv@curves$curve2$s[crv@curves$curve2$ord, 2]) +
+    ggtitle(paste0("Dataset",datasetIter))
   assign(paste0("trajplot",datasetIter),ggTraj)
 }
 
@@ -202,10 +203,12 @@ scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
                    minor_breaks = c(0:5) * .1) +
 scale_y_continuous(limits = c(0, 1)) +
 scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("All 10 datasets")
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("All 10 datasets") + guides(col=guide_legend(nrow=3)) + xlab("FDR") + ylab("TPR")
+
 
 pMeanLegAll <- plot_grid(pMeanAll, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanLegAll
+
 
 #### only for datasets where each method found the correct trajectory
 resListCleaned <- resList

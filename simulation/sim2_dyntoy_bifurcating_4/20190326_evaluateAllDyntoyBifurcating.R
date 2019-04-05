@@ -124,39 +124,38 @@ for(datasetIter in 1:10){
   cds <- estimateDispersions(cds)
   cds <- reduceDimension(cds)
   cds <- orderCells(cds)
-  print(plot_cell_trajectory(cds, color_by = "State"))
+  print(plot_cell_trajectory(cds, color_by = "State") + ggtitle(paste0("Dataset ",datasetIter)))
+  phenoData(cds)$milestone <- gid$group_id
+  print(plot_cell_trajectory(cds, color_by = "milestone") + ggtitle(paste0("Dataset ",datasetIter)))
   if(nlevels(phenoData(cds)$State)==1){
     BEAM_res <- data.frame(pval=rep(1,nrow(counts)))
   } else {
     BEAM_res <- BEAM(cds,  cores = 1)
   }
 
-  if(nlevels(phenoData(cds)$State)==1){
-    resEndMon <- data.frame(pvalue=rep(1,nrow(counts)))
-    resPatternMon <- data.frame(pvalue=rep(1,nrow(counts)))
-  } else {
-    # tradeSeq downstream of Monocle 2
-    phenoData(cds)$milestone <- gid$group_id
-    print(plot_cell_trajectory(cds, color_by = "milestone"))
-    plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1) ; legend("topleft", paste0("M",1:4), col=2:5,pch=16)
-    #M2 and M4 are the branches we need to compare.
-    # these correspond to State 1 and State 6.
-
-    ptMon <- matrix(phenoData(cds)$Pseudotime, nrow=ncol(counts), ncol=2, byrow=FALSE)
-    stateMon <- phenoData(cds)$State
-    #plot(x=ptMon,y=stateMon)
-    # use milestones to derive true weights.
-    # use slingshot weights to identify curves.
-    cellWeightsMon <- matrix(0, nrow=ncol(cds), ncol=2)
-    rownames(cellWeightsMon) <- colnames(counts)
-    cellWeightsMon[gid$group_id %in% c("M1","M3"),] <- c(1/2,1/2)
-    cellWeightsMon[gid$group_id %in% "M2",which.max(colSums(cWeights[gid$group_id %in% "M2",]))] <- 1
-    cellWeightsMon[gid$group_id %in% "M4",which.max(colSums(cWeights[gid$group_id %in% "M4",]))] <- 1
-
-    gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
-    resPatternMon <- patternTest(gamListMon)
-    resEndMon <- diffEndTest(gamListMon)
-  }
+  # if(nlevels(phenoData(cds)$State)==1){
+  #   resEndMon <- data.frame(pvalue=rep(1,nrow(counts)))
+  #   resPatternMon <- data.frame(pvalue=rep(1,nrow(counts)))
+  # } else {
+  #   # tradeSeq downstream of Monocle 2
+  #   plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1) ; legend("topleft", paste0("M",1:4), col=2:5,pch=16)
+  #   #M2 and M4 are the branches we need to compare.
+  #   # these correspond to State 1 and State 6.
+  #   ptMon <- matrix(phenoData(cds)$Pseudotime, nrow=ncol(counts), ncol=2, byrow=FALSE)
+  #   stateMon <- phenoData(cds)$State
+  #   #plot(x=ptMon,y=stateMon)
+  #   # use milestones to derive true weights.
+  #   # use slingshot weights to identify curves.
+  #   cellWeightsMon <- matrix(0, nrow=ncol(cds), ncol=2)
+  #   rownames(cellWeightsMon) <- colnames(counts)
+  #   cellWeightsMon[gid$group_id %in% c("M1","M3"),] <- c(1/2,1/2)
+  #   cellWeightsMon[gid$group_id %in% "M2",which.max(colSums(cWeights[gid$group_id %in% "M2",]))] <- 1
+  #   cellWeightsMon[gid$group_id %in% "M4",which.max(colSums(cWeights[gid$group_id %in% "M4",]))] <- 1
+  #
+  #   gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
+  #   resPatternMon <- patternTest(gamListMon)
+  #   resEndMon <- diffEndTest(gamListMon)
+  # }
 
   # # tradeSeq on true time and weights
   # ### tradeSeq on true pseudotime

@@ -19,14 +19,15 @@ library(dyntoy)
 library(patchwork)
 
 
-set.seed(12)
-data <- generate_dataset(
-    model = model_multifurcating(),
-    num_cells = 750,
-    num_features = 5000,
-    differentially_expressed_rate = .2
-  )
+# set.seed(12)
+# data <- generate_dataset(
+#     model = model_multifurcating(),
+#     num_cells = 750,
+#     num_features = 5000,
+#     differentially_expressed_rate = .2
+#   )
 
+data <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/data.rds")
 counts <- t(data$counts)
 falseGenes <- data$tde_overall$feature_id[data$tde_overall$differentially_expressed]
 nullGenes <- data$tde_overall$feature_id[!data$tde_overall$differentially_expressed]
@@ -130,7 +131,7 @@ vennDiagram(vennC)
 ```{r}
 resPattern <- patternTest(gamList)
 hist(resPattern$pval)
-deGenesPattern <- rownames(zcounts)[which(p.adjust(resPattern$pval,"fdr")<=0.05)]
+deGenesPattern <- rownames(counts)[which(p.adjust(resPattern$pval,"fdr")<=0.05)]
 length(deGenesPattern)
 mean(falseGenes%in%deGenesPattern) #TPR
 mean(!deGenesPattern%in%falseGenes) #FDR

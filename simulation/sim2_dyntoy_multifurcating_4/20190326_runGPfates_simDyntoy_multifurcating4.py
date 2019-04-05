@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from GPfates import GPfates
 
-logexp = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_multifurcating_4/simDyntoyLogCpm.txt', index_col=0, sep=' ')
-sInfo = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_multifurcating_4/sampleInfoSimDyntoy.txt', index_col=0, sep=' ')
+logexp = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/simDyntoyLogCpm.txt', index_col=0, sep=' ')
+sInfo = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/sampleInfoSimDyntoy.txt', index_col=0, sep=' ')
 
 # run GPfates by feeding it the true pseudotime.
 m = GPfates.GPfates(sInfo, logexp, pseudotime_column=1)
