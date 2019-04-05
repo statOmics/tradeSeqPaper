@@ -6,12 +6,22 @@ library(edgeR)
 library(rafalib)
 library(wesanderson)
 
-dataAll <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyngen_cycle_72/datasets/datasets_for_koen.rds")
+  FQnorm <- function(counts){
+    rk <- apply(counts,2,rank,ties.method='min')
+    counts.sort <- apply(counts,2,sort)
+    refdist <- apply(counts.sort,1,median)
+    norm <- apply(rk,2,function(r){ refdist[r] })
+    rownames(norm) <- rownames(counts)
+    return(norm)
+  }
+
+dataAll <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/datasets_for_koen.rds")
 
 
-for(datasetIter in 1:length(dataAll)){
+#for(datasetIter in seq(1:5,7:10)){
+for(datasetIter in 1){
 
-  pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyngen_cycle_72/dataset",datasetIter,".pdf"))
+  pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/dataset",datasetIter,".pdf"))
 
   data <- dataAll[[datasetIter]]
   counts <- t(data$counts)
@@ -23,14 +33,6 @@ for(datasetIter in 1:length(dataAll)){
   g <- Hmisc::cut2(truePseudotime,g=12)
 
   # quantile normalization
-  FQnorm <- function(counts){
-    rk <- apply(counts,2,rank,ties.method='min')
-    counts.sort <- apply(counts,2,sort)
-    refdist <- apply(counts.sort,1,median)
-    norm <- apply(rk,2,function(r){ refdist[r] })
-    rownames(norm) <- rownames(counts)
-    return(norm)
-  }
   normCounts <- FQnorm(counts)
 
   ## dim red
@@ -92,6 +94,6 @@ for(datasetIter in 1:length(dataAll)){
                       tradeR_slingshot_assoc_trueTime=assocTestTrueRes$pvalue,
                         row.names=rownames(counts))
   cobra <- COBRAData(pval=pval, truth=truth)
-  saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyngen_cycle_72/datasets/cobra",datasetIter,".rds"))
+  saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/cobra",datasetIter,".rds"))
   dev.off()
 }
