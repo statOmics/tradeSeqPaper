@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from GPfates import GPfates
 
-logexp = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/simDyntoyLogCpm.txt', index_col=0, sep=' ')
-sInfo = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/sampleInfoSimDyntoy.txt', index_col=0, sep=' ')
+logexp = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/simDyntoyLogCpm.txt', index_col=0, sep=' ')
+sInfo = pd.read_table('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/sampleInfoSimDyntoy.txt', index_col=0, sep=' ')
 
 
 # run GPfates by feeding it the true pseudotime.
@@ -14,14 +14,14 @@ m.dimensionality_reduction()
 m.store_dr()
 m.model_fates(t='global_pseudotime')
 # save plot
-currIter = pd.read_csv('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/currIter.txt', sep=" ", header=None)
+currIter = pd.read_csv('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/currIter.txt', sep=" ", header=None)
 cc = currIter[0]
 cc = cc[0]
 d = 'dataset'
 curd = d + str(cc)
 m.make_fates_viz()
 m.fates_viz.plot()
-GPfates.plt.savefig('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/GPfates_' + curd + '.png')
+GPfates.plt.savefig('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfates_' + curd + '.png')
 
 # identify bifurcation
 p = m.identify_bifurcation_point()
@@ -33,8 +33,8 @@ from GPfates.gp_utils import bifurcation_statistics
 bif_stats = bifurcation_statistics(m.fate_model, m.e)
 
 # write output
-np.savetxt('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesWeights.txt', weights)
-np.savetxt('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeRPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesBifStats.txt', bif_stats)
+np.savetxt('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesWeights.txt', weights)
+np.savetxt('/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesBifStats.txt', bif_stats)
 
 ### GPfates without true pseudotime
 #m = GPfates.GPfates(sInfo, logexp)

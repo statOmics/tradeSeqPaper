@@ -152,12 +152,14 @@ p1 <- plot_grid(trajplot1, trajplot2, trajplot3, trajplot4, trajplot5,
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg1
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformanceFirst1To5.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 dev.new()
 p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
                 bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg2
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformance6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ### mean plot
 # Monocle (hence also BEAM) only finds one lineage in datasets 3 6 9
@@ -300,7 +302,7 @@ scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
                    minor_breaks = c(0:5) * .1) +
 scale_y_continuous(limits = c(0, 1)) +
 scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes))
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + xlab("FDR") + ylab("TPR")
 
 pMeanIstLeg <- plot_grid(pMeanIst, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanIstLeg

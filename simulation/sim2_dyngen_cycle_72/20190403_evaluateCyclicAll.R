@@ -1,7 +1,7 @@
 library(slingshot)
 library(RColorBrewer)
 library(mgcv)
-library(tradeR)
+library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
@@ -19,7 +19,7 @@ dataAll <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajec
 
 
 #for(datasetIter in seq(1:5,7:10)){
-for(datasetIter in 1){
+for(datasetIter in 1:10){
 
   pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/dataset",datasetIter,".pdf"))
 
@@ -53,7 +53,7 @@ for(datasetIter in 1){
   assocTestRes <- associationTest(gamList)
   #hist(assocTestRes$pvalue)
 
-  ### tradeR on true pseudotime
+  ### tradeSeq on true pseudotime
   pst <- matrix(truePseudotime, nrow=ncol(counts), ncol=1, byrow=FALSE)
   gamListTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=cWeights, verbose=TRUE)
   assocTestTrueRes <- associationTest(gamListTrueTime)
@@ -75,7 +75,7 @@ for(datasetIter in 1){
   cds <- partitionCells(cds)
   cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
   pr_graph_test <- principalGraphTest(cds, k=3, cores=1)
-  print(plot_cell_trajectory(cds,color_by="louvain_component")) # fails to discover cyclic pattern.
+  print(plot_cell_trajectory(cds,color_by="louvain_component") + ggtitle(paste0("Dataset ",datasetIter))) # fails to discover cyclic pattern.
 
 
   # Performance plots
@@ -89,9 +89,9 @@ for(datasetIter in 1){
   truth[falseGenes,"status"] <- 1
 
   ### estimated pseudotime
-  pval <- data.frame( tradeR_slingshot_assoc=assocTestRes$pval,
+  pval <- data.frame( tradeSeq_slingshot_assoc=assocTestRes$pval,
                       Monocle3=pr_graph_test$pval,
-                      tradeR_slingshot_assoc_trueTime=assocTestTrueRes$pvalue,
+                      tradeSeq_slingshot_assoc_trueTime=assocTestTrueRes$pvalue,
                         row.names=rownames(counts))
   cobra <- COBRAData(pval=pval, truth=truth)
   saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/cobra",datasetIter,".rds"))

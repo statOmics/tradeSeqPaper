@@ -2,7 +2,7 @@ library(here)
 library(slingshot)
 library(RColorBrewer)
 library(mgcv)
-library(tradeR)
+library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
@@ -37,11 +37,9 @@ theme_update(legend.position = "none",
              axis.text.x = element_text(size = rel(.8)),
              axis.text.y = element_text(size = rel(.8)))
 
-### bifurcating dyntoy plot  ####
 dir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets"
 cobraFiles <- list.files(dir, pattern="cobra*", full.names=TRUE)
-#cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
-cobraFiles <- cobraFiles[c(1,3:9,2)] #order from 1 to 10
+cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
 
 
 plotPerformanceCurve <- function(cobraObject){
@@ -75,7 +73,7 @@ for(ii in 1:length(cobraFiles)){
 }
 
 p1 <- plot_grid(bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
-           bifplot6, bifplot7, bifplot8, bifplot9, #bifplot10,
+           bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
         nrow=2, ncol=5)
 
 plotsBif <- sapply(cobraFiles, function(file){
@@ -93,14 +91,12 @@ pAll <- ggplot(resPlots[[1]],
 
 legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
                            theme(legend.position = "bottom",
-                                 legend.key.width = unit(1.3, "cm")) + guides(fill=guide_legend(nrow=3)))
+                                 legend.key.width = unit(1.3, "cm")))
 
 pLeg <- plot_grid(pAll, legend_all, rel_heights=c(1,0.2), nrow=2, ncol=1)
 pLeg
 
 #### plot with trajectories
-datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasetClustersSlingshot.txt", header=TRUE)
-
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
     counts.sort <- apply(counts,2,sort)
@@ -110,10 +106,11 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
     return(norm)
   }
 pal <- wes_palette("Zissou1", 12, type = "continuous")
+dataAll <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/datasets_for_koen.rds")
 
 for(datasetIter in c(1:10)){
 
-  data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
+  data <- dataAll[[datasetIter]]
   counts <- t(data$counts)
 
   # get milestones
@@ -129,26 +126,19 @@ for(datasetIter in c(1:10)){
 
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-  rd <- pca$x[,1:3]
-  ## cluster
-  nClusters <- datasetClusters$nClusters[datasetIter]
-  set.seed(5)
-  cl <- kmeans(rd, centers = nClusters)$cluster
+  rd <- pca$x[,1:2]
+  #plot(rd, pch=16, asp = 1, col=pal[g])
 
-  #lineages
-  lin <- getLineages(rd, cl, start.clus=datasetClusters$start[datasetIter], end.clus=c(datasetClusters$end1[datasetIter], datasetClusters$end2[datasetIter]))
-  #curves
-  crv <- getCurves(lin)
-  plot(rd, col = pal[g], pch=16, asp = 1)
-  lines(crv, lwd=2, col="black")
+  library(princurve)
+  pcc <- principal_curve(rd, smoother="periodic_lowess")
+  #lines(x=pcc$s[order(pcc$lambda),1], y=pcc$s[order(pcc$lambda),2], col="red", lwd=2)
+
 
   ggTraj <- ggplot(as.data.frame(rd), aes(x = PC1, y = PC2)) +
-    geom_point(col = pal[g]) +
+    geom_point(col = pal[g], size=1) +
     theme_classic() +
-    geom_path(x = crv@curves$curve1$s[crv@curves$curve1$ord, 1],
-              y = crv@curves$curve1$s[crv@curves$curve1$ord, 2]) +
-    geom_path(x = crv@curves$curve2$s[crv@curves$curve2$ord, 1],
-              y = crv@curves$curve2$s[crv@curves$curve2$ord, 2])
+    geom_path(x = pcc$s[order(pcc$lambda),1],
+              y = pcc$s[order(pcc$lambda),2])
   assign(paste0("trajplot",datasetIter),ggTraj)
 }
 
@@ -157,19 +147,19 @@ p1 <- plot_grid(trajplot1, trajplot2, trajplot3, trajplot4, trajplot5,
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg1
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
 dev.new()
 p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
                 bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg2
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ### mean plot
-# Monocle (hence also BEAM) only finds one lineage in datasets 3 6 9
-# Monocle fails to separate the correct two lineages in datasets 4 7 8 10
-# GPfates only finds one lineage in datasets 3 4 8 9
-# iCOBRA does not seem to be consistent in the cut-offs, so difficult to merge different datasets => calculate FDP and TPR yourself.
 resList <- c()
+alphaSeq <- c(seq(1e-16,1e-9,length=100),seq(5e-9,1e-3,length=250),seq(5e-2,1,length=500))
 for(ii in 1:length(cobraFiles)){
     cobra <- readRDS(cobraFiles[ii])
     pvals <- pval(cobra)
@@ -177,15 +167,18 @@ for(ii in 1:length(cobraFiles)){
     truths <- as.logical(truth(cobra)[,1])
     # performance for all p-value based methods
     hlp <- apply(pvals,2,function(x){
-      pOrder <- order(x,decreasing=FALSE)
+      #pOrder <- order(x,decreasing=FALSE)
       padj <- p.adjust(x,"fdr")
-      fdr <- cumsum(!truths[pOrder])/(1:length(pOrder))
-      tpr <- cumsum(truths[pOrder])/sum(truths)
-      df <- data.frame(fdr=fdr, tpr=tpr, cutoff=(1:length(padj))/length(padj))
+      df <- as.data.frame(t(sapply(alphaSeq, function(alpha){
+          R <- which(padj <= alpha)
+          fdr <- sum(!truths[R])/length(R) #false over rejected
+          tpr <- sum(truths[R])/sum(truths) #TP over all true
+          c(fdr=fdr, tpr=tpr, cutoff=alpha)
+      })))
     })
     # summarize
     dfIter <- do.call(rbind,hlp)
-    dfIter$method=rep(colnames(pvals),each=nrow(pvals))
+    dfIter$method=rep(colnames(pvals),each=length(alphaSeq))
     dfIter$dataset <- ii
     resList[[ii]] <- dfIter
 }
@@ -193,111 +186,17 @@ for(ii in 1:length(cobraFiles)){
 #### across all datasets
 library(tidyverse)
 df <- as_tibble(do.call(rbind,resList))
+df$method <- gsub(x=df$method,pattern="Monocle3",replacement="Monocle3_assoc")
 df <- df %>% group_by(method,cutoff) %>%
         summarize(meanTPR=mean(tpr,na.rm=TRUE),
                 meanFDR=mean(fdr,na.rm=TRUE)) %>% arrange(method,cutoff)
-pMeanAll <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
+pMeanAll <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1) +
 scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
                    minor_breaks = c(0:5) * .1) +
 scale_y_continuous(limits = c(0, 1)) +
 scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("All 10 datasets")
+scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + xlab("FDR") + ylab("TPR")
+saveRDS(pMeanAll, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/pMeanCycle.rds")
 
 pMeanLegAll <- plot_grid(pMeanAll, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanLegAll
-
-#### only for datasets where each method found the correct trajectory
-resListCleaned <- resList
-# remove BEAM for datasets where Monocle2 did not find a branching
-resListCleaned[c(3,6,9)] <- lapply(resListCleaned[c(3,6,9)], function(df){
-  df[!df$method=="BEAM",]
-})
-# remove Monocle_tradeSeq for datasets where Monocle
-# (a) did not find a branching;
-# (b) wrongly assigned the two lineages to the same branch.
-resListCleaned[c(3,6,9,4,7,8,10)] <- lapply(resListCleaned[c(3,6,9,4,7,8,10)], function(df){
-  df[-grep(df$method, pattern="tradeSeq_Monocle2*"),]
-})
-# remove GPfates for datasets where they only find a single lineage
-resListCleaned[c(3,4,8,9)] <- lapply(resListCleaned[c(3,4,8,9)], function(df){
-  df[!df$method=="GPfates",]
-})
-# remove GPfates_tradeSeq for those datasets too.
-resListCleaned[c(3,4,8,9)] <- lapply(resListCleaned[c(3,4,8,9)], function(df){
-  df[-grep(df$method, pattern="tradeSeq_GPfates*"),]
-})
-
-library(tidyverse)
-df <- as_tibble(do.call(rbind,resListCleaned))
-df <- df %>% group_by(method,cutoff) %>%
-        summarize(meanTPR=mean(tpr,na.rm=TRUE),
-                meanFDR=mean(fdr,na.rm=TRUE))
-
-
-pMean <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
-scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
-                   minor_breaks = c(0:5) * .1) +
-scale_y_continuous(limits = c(0, 1)) +
-scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("Only datasets with correct trajectory per method.")
-
-pMeanLeg <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pMeanLeg
-
-### pretending we don't know the truth: use every dataset where >1 lineage is discovered for every method.
-resListBif <- resList
-# remove BEAM for datasets where Monocle2 did not find a branching
-resListBif[c(3,6,9)] <- lapply(resListBif[c(3,6,9)], function(df){
-  df[!df$method=="BEAM",]
-})
-# remove Monocle_tradeSeq for datasets where Monocle
-# (a) did not find a branching;
-resListBif[c(3,6,9)] <- lapply(resListBif[c(3,6,9)], function(df){
-  df[-grep(df$method, pattern="tradeSeq_Monocle2*"),]
-})
-# remove GPfates for datasets where they only find a single lineage
-resListBif[c(3,4,8,9)] <- lapply(resListBif[c(3,4,8,9)], function(df){
-  df[!df$method=="GPfates",]
-})
-# remove GPfates_tradeSeq for those datasets too.
-resListBif[c(3,4,8,9)] <- lapply(resListBif[c(3,4,8,9)], function(df){
-  df[-grep(df$method, pattern="tradeSeq_GPfates*"),]
-})
-
-library(tidyverse)
-df <- as_tibble(do.call(rbind,resListBif))
-df <- df %>% group_by(method,cutoff) %>%
-        summarize(meanTPR=mean(tpr,na.rm=TRUE),
-                meanFDR=mean(fdr,na.rm=TRUE))
-
-
-pMean <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
-scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
-                   minor_breaks = c(0:5) * .1) +
-scale_y_continuous(limits = c(0, 1)) +
-scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + ggtitle("Every bifurcating trajectory for each method.")
-
-pMeanBif <- plot_grid(pMean, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pMeanBif
-
-# for intersection of datasets where each method found a correct trajectory; only datasets 1,2,5
-resListIst <- resList
-resListIst <- resListIst[c(1,2,5)]
-library(tidyverse)
-df <- as_tibble(do.call(rbind,resListIst))
-df <- df %>% group_by(method,cutoff) %>%
-        summarize(meanTPR=mean(tpr,na.rm=TRUE),
-                meanFDR=mean(fdr,na.rm=TRUE))
-
-
-pMeanIst <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
-scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
-                   minor_breaks = c(0:5) * .1) +
-scale_y_continuous(limits = c(0, 1)) +
-scale_color_manual(values = cols, breaks = names(cols)) +
-scale_linetype_manual(values = linetypes, breaks = names(linetypes))
-
-pMeanIstLeg <- plot_grid(pMeanIst, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pMeanIstLeg
-saveRDS(pMeanIst,file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/pMeanIstBifurcation.rds")
