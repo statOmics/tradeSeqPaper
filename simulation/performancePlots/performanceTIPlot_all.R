@@ -1,4 +1,4 @@
-#setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/")
+setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -147,7 +147,7 @@ theme_update(legend.position = "none",
 ### cyclic performance ####
 cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle.rds"))
 
-pCycle <- cyclePlot + scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1),
+pCycle <- cyclePlot + scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1,.5,1),
                    minor_breaks = c(0:5) * .1) +
 scale_y_continuous(limits = c(.5, 1)) +
 scale_color_manual(values = cols, breaks = names(cols)) +
@@ -159,7 +159,7 @@ rm(cyclePlot)
 bifPlot <- readRDS(here("simulation", "performancePlots", "pMeanIstBifurcation.rds"))
 
 pDyntoyBif <- bifPlot +
-  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1),
+  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1, .5, 1),
                      minor_breaks = c(0:5) * .1) +
   scale_y_continuous(limits = c(.5, 1)) +
   scale_color_manual(values = cols, breaks = names(cols)) +
@@ -179,7 +179,7 @@ pMulti <- ggplot(multiPlot, aes(x = FDP, y = TPR, col = method)) +
   geom_path(size = 1, aes(linetype = method)) +
   xlab("FDP") +
   scale_y_continuous(limits = c(.5, 1)) +
-  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1),
+  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1, .5, 1),
                      minor_breaks = c(0:5) * .1) +
   scale_color_manual(values = cols, breaks = names(cols)) +
   scale_linetype_manual(values = linetypes, breaks = names(linetypes))
@@ -228,10 +228,10 @@ ggCycle <- ggplot(as.data.frame(rdCycle), aes(x = PC1, y = PC2)) +
 ggBif <- ggplot(as.data.frame(rdBif), aes(x = PC1, y = PC2)) +
   geom_point(col = pal[gBif]) +
   theme_classic() +
-  geom_path(x = crvBif@curves$curve1$s[crvDyntoy@curves$curve1$ord, 1],
-            y = crvBif@curves$curve1$s[crvDyntoy@curves$curve1$ord, 2]) +
-  geom_path(x = crvBif@curves$curve2$s[crvDyntoy@curves$curve2$ord, 1],
-            y = crvBif@curves$curve2$s[crvDyntoy@curves$curve2$ord, 2]) +
+  geom_path(x = crvBif@curves$curve1$s[crvBif@curves$curve1$ord, 1],
+            y = crvBif@curves$curve1$s[crvBif@curves$curve1$ord, 2]) +
+  geom_path(x = crvBif@curves$curve2$s[crvBif@curves$curve2$ord, 1],
+            y = crvBif@curves$curve2$s[crvBif@curves$curve2$ord, 2]) +
   ggtitle("Bifurcating dataset") +
   theme(plot.title = element_text(face = "bold", hjust = .5))
 
