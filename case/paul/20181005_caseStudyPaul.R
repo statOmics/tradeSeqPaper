@@ -146,7 +146,7 @@ while (k < 6) {
   lines(crv, lwd = 2, col = "black")
 }
 dev.off()
-# 
+#
 
 #### combine end point with pattern test
 library(tidyverse)
@@ -454,10 +454,10 @@ for (xx in cUniq) {
 }
 
 ## for cheatsheet
-mypar(mfrow = c(2, 2), mar = c(2.5, 2.8, 1.6, 1.1), cex.lab = 1.8, cex.axis = 1.25, cex.main = 1.4)
+mypar(mfrow = c(2, 2), mar = c(2.5, 2.8, 1.6, 1.1), cex.lab = 1.8, cex.axis = 1.25, cex.main = 1.4, bty='n')
 for (xx in 23:26) {
   cId <- which(clusterLabels == xx)
-  plot(x = seq(0, 1, length = 100), y = rep(range(yhatPatScaled[cId, ]), 50), type = "n", main = paste0("Cluster ", xx - 22), xlab = "Pseudotime", ylab = "Normalized expression", xaxt = "n")
+  plot(x = seq(0, 1, length = 100), y = rep(range(yhatPatScaled[cId, ]), 50), type = "n", main = paste0("Cluster ", xx - 22), xlab = "Pseudotime", ylab = "Standardized log(count + 1)", xaxt = "n")
   axis(1, at = c(0, 0.3, 0.6, 0.9), cex.axis = 1.25, cex.lab = 1.5)
   for (ii in 1:length(cId)) {
     geneId <- rownames(yhatPatScaled)[cId[ii]]

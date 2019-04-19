@@ -52,6 +52,7 @@ counts <- counts[!apply(counts, 1, function(row) any(is.na(row))), ]
 counts <- counts[, colnames(counts) %in% colnames(origData)]
 keep <- rowSums(edgeR::cpm(counts) > 5) >= 15
 countsFiltered <- counts[keep, ]
+countsFiltered <- countsFiltered[-grep(rownames(countsFiltered), pattern="ERCC"),]
 ```
 
 ```{r EDA}
