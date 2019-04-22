@@ -54,7 +54,7 @@ plotPerformanceCurve <- function(cobraObject){
   pDyntoy <- ggplot(DyntoyPlot, aes(x = FDP, y = TPR, col = method)) +
     geom_path(size = 1, aes(linetype = method)) +
     xlab("FDP") +
-    scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+    scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1, 0.5, 1),
                        minor_breaks = c(0:5) * .1) +
     scale_y_continuous(limits = c(0, 1)) +
     scale_color_manual(values = cols, breaks = names(cols)) +
@@ -201,7 +201,7 @@ df <- df %>% group_by(method,cutoff) %>%
         summarize(meanTPR=mean(tpr,na.rm=TRUE),
                 meanFDR=mean(fdr,na.rm=TRUE))
 pMeanAll <- ggplot(df, aes(x=meanFDR, y=meanTPR, col=method)) + geom_path(size = 1, aes(linetype = method)) +
-scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1),
+scale_x_continuous(limits = c(0, 1), breaks = c(0.01, 0.05, 0.1, 0.5, 1),
                    minor_breaks = c(0:5) * .1) +
 scale_y_continuous(limits = c(0, 1)) +
 scale_color_manual(values = cols, breaks = names(cols)) +
