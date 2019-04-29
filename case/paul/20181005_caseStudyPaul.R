@@ -5,6 +5,7 @@ library(monocle) # Load Monocle
 library(rafalib)
 
 cds <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS")))
+# if no internet: data(se,package="tradeSeq")
 
 # Update the old CDS object to be compatible with Monocle 3
 cds <- updateCDS(cds)

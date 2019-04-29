@@ -1,5 +1,5 @@
 ---
-title: 'Case study: OE dataset - three versions of DE'
+title: 'Case study: OE dataset'
 author: "Koen Van den Berge"
 date: "`r Sys.Date()`"
 ---
@@ -80,15 +80,15 @@ register(DoparParam())
 core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = clus.labels, batch = batch))
 #zinb_c <- zinbFit(core, X = '~ clusLabel + batch', commondispersion = TRUE)
 
-#save(zinb_c,file="~/zinbFletcher.rda")
-load("~/zinbFletcher.rda")
+#save(zinb_c,file="~/zinbFletcherTradeSeq.rda")
+load("~/zinbFletcherTradeSeq.rda")
 weights <- computeObservationalWeights(zinb_c, countsFiltered)
 
 ```
 
 
 ```{r fitGAM}
-#gamList <- tradeSeq::fitGAM(countsFiltered, X=model.matrix(~batch), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights)
+#gamList <- tradeSeq::fitGAM(countsFiltered, U=model.matrix(~-1+batch), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights)
 #save(gamList,file="~/gamListOE_tradeSeq.rda")
 load("~/gamListOE_tradeSeq.rda")
 ```
@@ -99,9 +99,7 @@ load("~/gamListOE_tradeSeq.rda")
 ## Comparing the expression at the differentiated cell type
 
 ```{r}
-### ERROR: model 2548 gives negative variance for the lineage 1 - lineage 2 contrast. how come?
-
-endTestGam <- diffEndTest(gamList, omnibus = TRUE, pairwise = TRUE)
+endTestGam <- diffEndTest(gamList, global = TRUE, pairwise = TRUE)
 endOmnibusPval <- endTestGam$pvalue
 sum(is.na(endOmnibusPval)) # genes we could not fit or test.
 endOmnibusPadj <- p.adjust(endOmnibusPval, "fdr")
@@ -206,7 +204,7 @@ xtable(tab)
 
 
 ```{r patternTest}
-resPat <- patternTest(gamList, omnibus = TRUE, pairwise = TRUE)
+resPat <- patternTest(gamList, global = TRUE, pairwise = TRUE)
 o <- order(resPat$waldStat, decreasing = TRUE)
 
 i <- 0
@@ -324,10 +322,10 @@ sumFoundFisher <- sapply(1:nrow(countsFiltered), function(ii) {
 ### cell cycle patterns within lineages: tradeSeq associationTest
 
 ```{r}
-assocRes <- associationTest(gamList, omnibus = TRUE, lineages = TRUE)
+assocRes <- associationTest(gamList, global = TRUE, lineages = TRUE)
 deAssoc1 <- rownames(assocRes)[p.adjust(assocRes$pvalue_1, "fdr") <= 0.05]
 deAssoc1 <- deAssoc1[!is.na(deAssoc1)]
-length(deAssoc1) # 1931 DE genes
+length(deAssoc1) # 1951 DE genes
 ```
 
 #### cell cycle gene set
@@ -559,11 +557,11 @@ for (i in 1:15) lines(x = 1:nrow(countsFiltered), y = sumFoundMat[, i], col = al
 ```{r}
 startRes <- startVsEndTest(gamList)
 top250Genes <- rownames(head(startRes[order(startRes$waldStat, decreasing = TRUE), ], 250))
-write.table(top250Genes, file = "~/startTestOETop250.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(top250Genes, file = "~/startTestOETop250_tradeSeq.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 # submit to http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp for top 20 gene sets
 
 
-overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapStartTestOE")
+overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapStartTestOE_tradeSeq")
 overlapSets <- overlap[10:30]
 overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x, split = "\t"))
 gsNames <- unname(unlist(lapply(overlapSetsSplit, "[[", 1)))
