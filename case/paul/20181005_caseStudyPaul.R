@@ -1,11 +1,29 @@
 library(monocle) # Load Monocle
 #library(reticulate)
 #use_python("/Applications/miniconda3/bin/python3.6")
-
 library(rafalib)
+library(RColorBrewer)
+gcolpal <- c(brewer.pal(8, "Dark2")[-c(2, 3, 5)],
+             brewer.pal(12, "Paired")[c(1, 2, 8, 10, 9)],
+             brewer.pal(12, "Set3")[c(7, 8, 12)],
+             brewer.pal(8, "Pastel2")[8], brewer.pal(11, "BrBG")[11],
+             brewer.pal(11, "PiYG")[1], "cyan", "darkblue", "darkorchid2",
+             "brown1", "springgreen1", "deepskyblue4", "darkolivegreen",
+             "antiquewhite2")
+cell_type_color <- c("Basophils" = "#E088B8",
+                    "Dendritic cells" = "#46C7EF",
+                    "Eosinophls" = "#EFAD1E",
+                    "Erythrocyte" = "#8CB3DF",
+                    "Monocytes" = "#53C0AD",
+                    "Multipotent progenitors" = "#4EB859",
+                    "GMP" = "#D097C4",
+                    "Megakaryocytes" = "#ACC436",
+                    "Neutrophils" = "#F5918A",
+                    'NA' = '#000080')
 
+### PREPROCESSING.
 cds <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS")))
-# if no internet: data(se,package="tradeSeq")
+# if no internet / link NA: see code below (starting at l.117).
 
 # Update the old CDS object to be compatible with Monocle 3
 cds <- updateCDS(cds)
@@ -30,16 +48,7 @@ pData(cds)$cell_type2 <- plyr::revalue(as.character(pData(cds)$cluster),
                                         "18" = 'Eosinophls',
                                         "19" = 'lymphoid'))
 
-cell_type_color <- c("Basophils" = "#E088B8",
-                    "Dendritic cells" = "#46C7EF",
-                    "Eosinophls" = "#EFAD1E",
-                    "Erythrocyte" = "#8CB3DF",
-                    "Monocytes" = "#53C0AD",
-                    "Multipotent progenitors" = "#4EB859",
-                    "GMP" = "#D097C4",
-                    "Megakaryocytes" = "#ACC436",
-                    "Neutrophils" = "#F5918A",
-                    'NA' = '#000080')
+
 
 DelayedArray:::set_verbose_block_processing(TRUE)
 
@@ -91,33 +100,42 @@ S_matrix <- reducedDimS(cds)
 plot(data_df[, 1], data_df[, 2], col = cell_type_color[phenoData(cds)$cell_type2], pch = 16)
 
 ### slingshot
-library(RColorBrewer)
-gcolpal <- c(brewer.pal(8, "Dark2")[-c(2, 3, 5)],
-             brewer.pal(12, "Paired")[c(1, 2, 8, 10, 9)],
-             brewer.pal(12, "Set3")[c(7, 8, 12)],
-             brewer.pal(8, "Pastel2")[8], brewer.pal(11, "BrBG")[11],
-             brewer.pal(11, "PiYG")[1], "cyan", "darkblue", "darkorchid2",
-             "brown1", "springgreen1", "deepskyblue4", "darkolivegreen",
-             "antiquewhite2")
-
 set.seed(97)
 rd <- data_df[, 1:2]
 cl <- kmeans(rd, centers = 7)$cluster
 plot(rd, col = brewer.pal(9, "Set1")[cl], pch = 16, asp = 1)
 library(slingshot)
 lin <- getLineages(rd, clusterLabels = cl, start.clus = 4)
-plot(rd, col = gcolpal[cl], xlab = "UMAP1", ylab = "UMAP2")
+plot(rd, col = brewer.pal(9, "Set1")[cl], xlab = "UMAP1", ylab = "UMAP2")
 lines(lin, lwd = 2)
 crv <- getCurves(lin)
-plot(rd, col = gcolpal[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2")
+plot(rd, col = brewer.pal(9, "Set1")[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2")
 lines(crv, lwd = 2)
 plot(rd, col = cell_type_color[phenoData(cds)$cell_type2], main = "color by cell type", xlab = "UMAP1", ylab = "UMAP2", pch = 16)
 lines(crv, lwd = 2)
 
+### no internet:  use data stored in tradeSeq package
+data(se,package="tradeSeq")
+rd <- reducedDim(se)
+set.seed(97)
+cl <- kmeans(rd, centers = 7)$cluster
+plot(rd, col = brewer.pal(9, "Set1")[cl], pch = 16, asp = 1)
+library(slingshot)
+lin <- getLineages(rd, clusterLabels = cl, start.clus = 4)
+plot(rd, col = brewer.pal(9, "Set1")[cl], xlab = "UMAP1", ylab = "UMAP2")
+lines(lin, lwd = 2)
+crv <- getCurves(lin)
+plot(rd, col = brewer.pal(9, "Set1")[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2")
+lines(crv, lwd = 2)
+plot(rd, col = cell_type_color[colData(se)$cell_type2], main = "color by cell type", xlab = "UMAP1", ylab = "UMAP2", pch = 16)
+lines(crv, lwd = 2)
+counts <- as.matrix(assays(se)$counts)
+
+
 ######## tradeSeq analysis
 library(mgcv)
 library(tradeSeq)
-counts <- exprs(cds)#gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
+gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
 waldEndResPaul <- diffEndTest(gamListPaul, omnibus = TRUE, pairwise = FALSE)
