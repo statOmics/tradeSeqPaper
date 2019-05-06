@@ -326,6 +326,9 @@ assocRes <- associationTest(gamList, global = TRUE, lineages = TRUE)
 deAssoc1 <- rownames(assocRes)[p.adjust(assocRes$pvalue_1, "fdr") <= 0.05]
 deAssoc1 <- deAssoc1[!is.na(deAssoc1)]
 length(deAssoc1) # 1951 DE genes
+
+o = order(assocRes$waldStat_1, decreasing=TRUE)
+write.table(head(assocRes[o,"waldStat_1",drop=FALSE], 2000), file="~/topGenesNeuronalLineage.txt", quote=FALSE, col.names=FALSE)
 ```
 
 #### cell cycle gene set
@@ -587,7 +590,7 @@ tab <- data.frame(
 
 
 ```{r}
-early24 <- earlyDETest(gamList, knots = c(2, 4), nPoints = 50, omnibus = TRUE, pairwise = TRUE)
+early24 <- earlyDETest(gamList, knots = c(2, 4), nPoints = 50, global = TRUE, pairwise = TRUE)
 library(stageR)
 pScreen <- early24$pvalue
 names(pScreen) <- rownames(countsFiltered)
