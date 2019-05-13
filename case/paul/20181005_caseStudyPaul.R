@@ -3,6 +3,7 @@ library(monocle) # Load Monocle
 #use_python("/Applications/miniconda3/bin/python3.6")
 library(rafalib)
 library(RColorBrewer)
+library(SingleCellExperiment)
 gcolpal <- c(brewer.pal(8, "Dark2")[-c(2, 3, 5)],
              brewer.pal(12, "Paired")[c(1, 2, 8, 10, 9)],
              brewer.pal(12, "Set3")[c(7, 8, 12)],
@@ -115,7 +116,11 @@ plot(rd, col = cell_type_color[phenoData(cds)$cell_type2], main = "color by cell
 lines(crv, lwd = 2)
 
 ### no internet:  use data stored in tradeSeq package
-data(se,package="tradeSeq")
+#data(se,package="tradeSeq")
+download.file(
+  "https://github.com/statOmics/tradeSeqPaper/raw/master/data/se_paul.rda",
+  destfile = "./se_paul.rda")
+load("./se_paul.rda")
 rd <- reducedDim(se)
 set.seed(97)
 cl <- kmeans(rd, centers = 7)$cluster
@@ -138,7 +143,7 @@ library(tradeSeq)
 gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
 #end point test: 2207 (2266) genes
-waldEndResPaul <- diffEndTest(gamListPaul, omnibus = TRUE, pairwise = FALSE)
+waldEndResPaul <- diffEndTest(gamListPaul, global = TRUE, pairwise = FALSE)
 sum(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)
 endGenes <- rownames(counts)[which(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)]
 # pattern test: 2425 genes
@@ -146,7 +151,7 @@ patternResPaul <- patternTest(gamListPaul)
 sum(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05, na.rm = TRUE)
 patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05)]
 # start point test: 2015 genes
-waldStartResPaul <- startVsEndTest(gamListPaul, omnibus = TRUE, pairwise = FALSE)
+waldStartResPaul <- startVsEndTest(gamListPaul, global = TRUE, pairwise = FALSE)
 sum(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)
 startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)]
 
