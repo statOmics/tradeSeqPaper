@@ -151,7 +151,7 @@ patternResPaul <- patternTest(gamListPaul)
 sum(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05, na.rm = TRUE)
 patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05)]
 # start point test: 2015 genes
-waldStartResPaul <- startVsEndTest(gamListPaul, global = TRUE, pairwise = FALSE)
+waldStartResPaul <- startVsEndTest(gamListPaul, global = TRUE, lineages = FALSE)
 sum(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)
 startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)]
 
