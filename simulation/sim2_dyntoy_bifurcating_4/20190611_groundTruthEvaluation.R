@@ -18,7 +18,7 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
   }
 
 #pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
-for(datasetIter in 1:10){
+for(datasetIter in 2:10){
 
   #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
@@ -72,10 +72,13 @@ for(datasetIter in 1:10){
   trueT <- matrix(truePseudotime, nrow=length(truePseudotime), ncol=2, byrow=FALSE)
   gamListTruth <- fitGAM(counts, pseudotime=trueT, cellWeights=trueWeights)
 
+  endRes <- diffEndTest(gamListTruth)
+  patternRes <- patternTest(gamListTruth)
+
   # Monocle BEAM analysis
   ### Monocle 2 BEAM analysis
   library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
-  source("20190611_helper.R")
+  source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
   featureInfo <- data.frame(gene_short_name=rownames(counts))
   rownames(featureInfo) <- rownames(counts)
   fd <- new("AnnotatedDataFrame", featureInfo)
@@ -117,7 +120,7 @@ for(datasetIter in 1:10){
   vecDispersionsInv <- mcols(dds)$dispersion
   vecDispersions <- 1/vecDispersionsInv
   names(vecDispersions) <- rownames(dds)
-  imp <- runImpulseDE2(matCountData=round(normCounts), dfAnnotation=dfAnn, boolCaseCtrl=TRUE, vecSizeFactorsExternal=sf, vecDispersionsExternal=vecDispersions)
+  imp <- runImpulseDE2(matCountData=round(normCounts), dfAnnotation=dfAnn, boolCaseCtrl=TRUE, vecSizeFactorsExternal=sf, vecDispersionsExternal=vecDispersions, scaNProc=2)
 
   # # GPfates
   # ## for GPfates, we would have to adapt the OMGP fitting. However, it is not possible to provide true weights to the OMGP model.
@@ -143,14 +146,14 @@ for(datasetIter in 1:10){
 
 
   pval <- data.frame( tradeSeq_diffEnd=endRes$pval,
-                      tradeSeq_pattern=resPattern$pval,
+                      tradeSeq_pattern=patternRes$pval,
                       BEAM=BEAM_true$pval,
-                      ImpulseDE2=imp$ XXXXX
+                      ImpulseDE2=imp$dfImpulseDE2Results$p,
                         row.names=rownames(counts))
-  score <- data.frame(GPfates=GPfatesBif$D,
-                        row.names=rownames(counts))
-  cobra <- COBRAData(pval=pval, truth=truth, score=score)
-  saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/cobra",datasetIter,".rds"))
+  #score <- data.frame(GPfates=GPfatesBif$D,
+  #                      row.names=rownames(counts))
+  cobra <- COBRAData(pval=pval, truth=truth)#, score=score)
+  saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/groundTruthCobra",datasetIter,".rds"))
 
   #dev.off()
 }

@@ -142,6 +142,9 @@ library(mgcv)
 library(tradeSeq)
 gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
 load("~/gamListPaul.rda")
+# check convergence: all genes converged.
+sum(unlist(lapply(gamListPaul, function(m) m$converged)))
+length(gamListPaul)
 #end point test: 2207 (2266) genes
 waldEndResPaul <- diffEndTest(gamListPaul, global = TRUE, pairwise = FALSE)
 sum(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)
