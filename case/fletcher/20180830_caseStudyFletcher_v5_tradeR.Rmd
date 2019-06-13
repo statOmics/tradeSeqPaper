@@ -91,6 +91,14 @@ weights <- computeObservationalWeights(zinb_c, countsFiltered)
 #gamList <- tradeSeq::fitGAM(countsFiltered, U=model.matrix(~-1+batch), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights)
 #save(gamList,file="~/gamListOE_tradeSeq.rda")
 load("~/gamListOE_tradeSeq.rda")
+## check convergence
+converged <- unlist(lapply(gamList, function(m){
+  if(class(m)=="try-error"){
+    return(FALSE)
+  } else return(m$converged)
+}))
+mean(converged)
+sum(converged) ; length(gamList)
 ```
 
 
