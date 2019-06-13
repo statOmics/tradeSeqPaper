@@ -378,30 +378,34 @@ rankstradeSeq <- rank(waldEndResPaul$waldStat)
 names(rankstradeSeq) <- rownames(waldEndResPaul)
 gseatradeSeq <- fgsea(gsList, rankstradeSeq, nperm = 1e5, minSize = 5)
 gseatradeSeq
+enrichtradeSeq <- plotEnrichment(gsList[["Erythrocyte Lineage"]], stats=rankstradeSeq)
 
 pvalBeam <- BEAM_res$pval
 names(pvalBeam) <- rownames(BEAM_res)
 ranksBEAM <- rank(pvalBeam)
 gseaBEAM <- fgsea(gsList, ranksBEAM, nperm = 1e4, minSize = 5)
 gseaBEAM
+enrichBEAM <- plotEnrichment(gsList[["Erythrocyte Lineage"]], stats=ranksBEAM)
 
 # edgeR omnibus test
-ranksEdgeR <- rank(lrtLeuk$table$LR)
-names(ranksEdgeR) <- rownames(lrtLeuk$table)
-gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm = 1e5, minSize = 5)
-gseaEdgeR
+# ranksEdgeR <- rank(lrtLeuk$table$LR)
+# names(ranksEdgeR) <- rownames(lrtLeuk$table)
+# gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm = 1e5, minSize = 5)
+# gseaEdgeR
 
 # edgeR neutrophil vs erythrocyte
 ranksEdgeR <- rank(lrtLeukNeutEry$table$LR)
 names(ranksEdgeR) <- rownames(lrtLeukNeutEry$table)
 gseaEdgeR <- fgsea(gsList, ranksEdgeR, nperm = 1e5, minSize = 5)
 gseaEdgeR
+enrichEdgeR <- plotEnrichment(gsList[["Erythrocyte Lineage"]], stats=ranksEdgeR)
 
-
-
-
+library(cowplot)
+plot_grid(enrichtradeSeq + ggtitle("tradeSeq") + ylim(c(-0.03,0.45)), enrichBEAM + ggtitle("BEAM") + ylim(c(-0.03,0.45)), enrichEdgeR + ggtitle("edgeR") + ylim(c(-0.03,0.45)), nrow=1, ncol=3, labels=letters[1:3])
+ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/enrichmentPlotsPaul.pdf")
 
 ## GSEA for erythrocytes is significant for tradeSeq, while it isn't for BEAM, and this is the biological contrast we are actually looking at. None of the other gene sets are significant.
+
 
 ########### Cluster significant pattern genes
 library(clusterExperiment)
