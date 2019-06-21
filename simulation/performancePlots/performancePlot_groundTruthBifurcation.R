@@ -15,8 +15,8 @@ library(dplyr)
 
 
 ### prepare performance plots ####
-cols <- c(tradeSeq_diffEnd="#C6DBEF", tradeSeq_pattern="#08306B", BEAM="#e41a1c", ImpulseDE2="darkkhaki")
-linetypes <- c(tradeSeq_diffEnd="solid", tradeSeq_pattern="solid", BEAM="solid", ImpulseDE2="solid")
+cols <- c(tradeSeq_diffEnd="#C6DBEF", tradeSeq_pattern="#08306B", BEAM="#e41a1c", ImpulseDE2="darkkhaki", tradeSeq_diffEnd_3k="dodgerblue", tradeSeq_pattern_3k="steelblue")
+linetypes <- c(tradeSeq_diffEnd="solid", tradeSeq_pattern="solid", BEAM="solid", ImpulseDE2="solid", tradeSeq_diffEnd_3k="solid", tradeSeq_pattern_3k="solid")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -153,9 +153,6 @@ pLeg2
 ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformanceGroundTruth6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ### mean plot
-# Monocle (hence also BEAM) only finds one lineage in datasets 3 6 9
-# Monocle fails to separate the correct two lineages in datasets 4 7 8 10
-# GPfates only finds one lineage in datasets 3 4 8 9
 # iCOBRA does not seem to be consistent in the cut-offs, so difficult to merge different datasets => calculate FDP and TPR yourself.
 resList <- c()
 for(ii in 1:length(cobraFiles)){

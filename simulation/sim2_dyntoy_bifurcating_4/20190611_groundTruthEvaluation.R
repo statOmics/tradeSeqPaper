@@ -22,7 +22,7 @@ source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/trade
   }
 
 #pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
-for(datasetIter in 1:10){
+for(datasetIter in 4:10){
 
   #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
@@ -79,6 +79,12 @@ for(datasetIter in 1:10){
   endRes <- diffEndTest(gamListTruth)
   patternRes <- patternTest(gamListTruth)
 
+  ### tradeSeq with 3 knots (like BEAM)
+  gamListTruth3k <- fitGAM(counts, pseudotime=trueT, cellWeights=trueWeights, nknots=3)
+
+  endRes3k <- diffEndTest(gamListTruth3k)
+  patternRes3k <- patternTest(gamListTruth3k)
+
   # Monocle BEAM analysis
   ### Monocle 2 BEAM analysis
   library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
@@ -99,7 +105,7 @@ for(datasetIter in 1:10){
   phenoData(cds)$original_cell_id <- colnames(counts)
   phenoData(cds)$Pseudotime <- truePseudotime
   BEAM_true <- BEAM_kvdb(cds,  cores = 1)
-  #Note: original BEAM throws away cells (supposedly the root state), this function does not.
+  # this is a customized BEAM function that uses the pre-existing branch variable in the phenodata.
 
   ## ImpulseDE2
   library(ImpulseDE2)
@@ -126,21 +132,6 @@ for(datasetIter in 1:10){
   names(vecDispersions) <- rownames(dds)
   imp <- runImpulseDE2(matCountData=round(normCounts), dfAnnotation=dfAnn, boolCaseCtrl=TRUE, vecSizeFactorsExternal=sf, vecDispersionsExternal=vecDispersions, scaNProc=2)
 
-  # # GPfates
-  # ## for GPfates, we would have to adapt the OMGP fitting. However, it is not possible to provide true weights to the OMGP model.
-  # logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
-  # sampleInfo <- data.frame(global_pseudotime=truePseudotime)
-  # rownames(sampleInfo) <- colnames(counts)
-  # write.table(logCpm, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/simDyntoyLogCpm.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
-  # write.table(sampleInfo, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/sampleInfoSimDyntoy.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
-  # write.table(datasetIter, file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/currIter.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
-  # #run with 20190206_runGPfates_simDyntoy.py
-  # system("python3 /Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190207_runGPfates_simDyntoy_bifurcating4.py")
-  # # import GPfates output
-  # GPfatesWeights <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesWeights.txt", header=FALSE)
-  # GPfatesBif <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesBifStats.txt", header=FALSE)
-  # colnames(GPfatesBif) <- c("bif_ll", "amb_ll", "shuff_bif_ll", "shuff_amb_ll", "phi0_corr", "D", "shuff_D")
-
 
   ## performance
   library(iCOBRA)
@@ -151,6 +142,8 @@ for(datasetIter in 1:10){
 
   pval <- data.frame( tradeSeq_diffEnd=endRes$pval,
                       tradeSeq_pattern=patternRes$pval,
+                      tradeSeq_diffEnd_3k=endRes3k$pval,
+                      tradeSeq_pattern_3k=patternRes3k$pval,
                       BEAM=BEAM_true$pval,
                       ImpulseDE2=imp$dfImpulseDE2Results$p,
                         row.names=rownames(counts))
