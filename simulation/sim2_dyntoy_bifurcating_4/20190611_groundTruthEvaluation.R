@@ -5,8 +5,12 @@ library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+library(BiocParallel)
+library(doParallel)
+NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type="continuous"))
 datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
+source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
 
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
@@ -18,7 +22,7 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
   }
 
 #pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
-for(datasetIter in 5:10){
+for(datasetIter in 1:10){
 
   #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
@@ -78,7 +82,6 @@ for(datasetIter in 5:10){
   # Monocle BEAM analysis
   ### Monocle 2 BEAM analysis
   library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
-  source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
   featureInfo <- data.frame(gene_short_name=rownames(counts))
   rownames(featureInfo) <- rownames(counts)
   fd <- new("AnnotatedDataFrame", featureInfo)
@@ -94,6 +97,7 @@ for(datasetIter in 5:10){
   branch[is.na(branch)] <- c("A","B")[sample(1:2, size=sum(is.na(branch)), replace=TRUE)]
   phenoData(cds)$Branch <- as.factor(branch)
   phenoData(cds)$original_cell_id <- colnames(counts)
+  phenoData(cds)$Pseudotime <- truePseudotime
   BEAM_true <- BEAM_kvdb(cds,  cores = 1)
   #Note: original BEAM throws away cells (supposedly the root state), this function does not.
 
@@ -150,9 +154,7 @@ for(datasetIter in 5:10){
                       BEAM=BEAM_true$pval,
                       ImpulseDE2=imp$dfImpulseDE2Results$p,
                         row.names=rownames(counts))
-  #score <- data.frame(GPfates=GPfatesBif$D,
-  #                      row.names=rownames(counts))
-  cobra <- COBRAData(pval=pval, truth=truth)#, score=score)
+  cobra <- COBRAData(pval=pval, truth=truth)
   saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/groundTruthCobra",datasetIter,".rds"))
 
   #dev.off()
