@@ -1,3 +1,12 @@
+---
+title: "evaluate K"
+author: "Koen Van den Berge"
+date: "6/22/2019"
+output: html_document
+---
+
+
+```{r}
 
 library(slingshot)
 library(RColorBrewer)
@@ -6,6 +15,7 @@ library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+library(BiocParallel)
 palette(wes_palette("Darjeeling1", 10, type="continuous"))
 datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
 source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
@@ -64,4 +74,4 @@ trueT <- matrix(truePseudotime, nrow=length(truePseudotime), ncol=2, byrow=FALSE
 
 aicMat <- evaluateK(counts=counts, pseudotime=trueT, cellWeights=trueWeights, k=3:10, nGenes=250, ncores=2)
 
-head(aicMat)
+```

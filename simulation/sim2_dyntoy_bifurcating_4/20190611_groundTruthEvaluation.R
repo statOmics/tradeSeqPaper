@@ -22,7 +22,7 @@ source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/trade
   }
 
 #pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
-for(datasetIter in 4:10){
+for(datasetIter in 1:10){
 
   #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
@@ -85,6 +85,11 @@ for(datasetIter in 4:10){
   endRes3k <- diffEndTest(gamListTruth3k)
   patternRes3k <- patternTest(gamListTruth3k)
 
+  ### tradeSeq with 4 knots (optimal acc to AIC)
+  gamListTruth4k <- fitGAM(counts, pseudotime=trueT, cellWeights=trueWeights, nknots=4)
+  endRes4k <- diffEndTest(gamListTruth4k)
+  patternRes4k <- patternTest(gamListTruth4k)
+
   # Monocle BEAM analysis
   ### Monocle 2 BEAM analysis
   library(monocle,lib.loc="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/")
@@ -138,6 +143,7 @@ for(datasetIter in 4:10){
   library(scales)
   truth <- as.data.frame(matrix(rep(0,nrow(counts)), dimnames=list(rownames(counts),"status")))
   truth[falseGenes,"status"] <- 1
+
 
 
   pval <- data.frame( tradeSeq_diffEnd=endRes$pval,

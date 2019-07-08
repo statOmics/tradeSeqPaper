@@ -46,6 +46,7 @@ knitr::include_graphics("/Users/koenvandenberge/fletcher3d.pdf")
 
 ```{r cufflinksCountData}
 suppressPackageStartupMessages(library(SummarizedExperiment))
+# download object from GEO: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE95601
 load("~/Downloads/GSE95601_oeHBCdiff_Cufflinks_eSet.rda")
 counts <- assayData(Cufflinks_eSet)$counts_table
 counts <- counts[!apply(counts, 1, function(row) any(is.na(row))), ]

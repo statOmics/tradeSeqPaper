@@ -119,29 +119,36 @@ lines(crv, lwd = 2)
 ######## tradeSeq analysis
 library(mgcv)
 library(tradeSeq)
-counts <- exprs(cds)
-gamListPaul10 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
-                        cellWeights = slingCurveWeights(crv), verbose = TRUE)
-devExpl10 <- unlist(lapply(gamListPaul10, function(x) summary(x)$dev.expl))
-rm(gamListPaul10)
+counts <- as.matrix(exprs(cds))
 
-gamListPaul8 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
-                       cellWeights = slingCurveWeights(crv), verbose = TRUE, nknots = 8)
-devExpl8 <- unlist(lapply(gamListPaul8, function(x) summary(x)$dev.expl))
-rm(gamListPaul8)
+
+gamListPaul3 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
+                       cellWeights = slingCurveWeights(crv), nknots = 3)
+devExpl3 <- unlist(lapply(gamListPaul3, function(x) summary(x)$dev.expl))
+rm(gamListPaul3)
 
 gamListPaul6 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
-                       cellWeights = slingCurveWeights(crv), verbose = TRUE, nknots = 6)
+                       cellWeights = slingCurveWeights(crv), nknots = 6)
 devExpl6 <- unlist(lapply(gamListPaul6, function(x) summary(x)$dev.expl))
 rm(gamListPaul6)
 
+gamListPaul8 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
+                       cellWeights = slingCurveWeights(crv), nknots = 8)
+devExpl8 <- unlist(lapply(gamListPaul8, function(x) summary(x)$dev.expl))
+rm(gamListPaul8)
+
+gamListPaul10 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
+                        cellWeights = slingCurveWeights(crv))
+devExpl10 <- unlist(lapply(gamListPaul10, function(x) summary(x)$dev.expl))
+rm(gamListPaul10)
+
 gamListPaul12 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
-                        cellWeights = slingCurveWeights(crv), verbose = TRUE, nknots = 12)
+                        cellWeights = slingCurveWeights(crv), nknots = 12)
 devExpl12 <- unlist(lapply(gamListPaul12, function(x) summary(x)$dev.expl))
 rm(gamListPaul12)
 
 gamListPaul14 <- fitGAM(counts, pseudotime = slingPseudotime(crv, na = FALSE),
-                        cellWeights = slingCurveWeights(crv), verbose = TRUE, nknots = 14)
+                        cellWeights = slingCurveWeights(crv), nknots = 14)
 devExpl14 <- unlist(lapply(gamListPaul14, function(x) summary(x)$dev.expl))
 rm(gamListPaul14)
 
@@ -149,10 +156,13 @@ rm(gamListPaul14)
 library(RColorBrewer)
 cols <- palette(brewer.pal(8, "Dark2"))
 
+pdf("~/robustK.pdf")
 par(bty = "l")
-plot(density(devExpl6), col = cols[1], xlab = "% Deviance explained", main = "")
+plot(density(devExpl3), col = cols[1], xlab = "% Deviance explained", main = "")
+lines(density(devExpl6), col = cols[6])
 lines(density(devExpl8), col = cols[2])
 lines(density(devExpl10), col = cols[3])
 lines(density(devExpl12), col = cols[4])
 lines(density(devExpl14), col = cols[5])
-legend("topright", paste0("k=", seq(6, 14, by = 2)), col = cols[1:5], lty = 1, lwd = 2)
+legend("topright", paste0("k=", c(3,seq(6, 14, by = 2))), col = cols[c(1,6,2:5)], lty = 1, lwd = 2)
+dev.off()

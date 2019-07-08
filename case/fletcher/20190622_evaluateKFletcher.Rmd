@@ -1,0 +1,98 @@
+---
+title: "evaluate K Fletcher et al. data"
+author: "Koen Van den Berge"
+date: "6/22/2019"
+output: html_document
+---
+
+```{r}
+load("~/PhD_Data/singleCell/fletcher/ShareWithKelly/E4c2b_slingshot_wsforkelly.RData")
+library(slingshot)
+library(rgl)
+library(rafalib)
+mypar()
+library(RColorBrewer)
+library(mgcv)
+library(tradeSeq)
+
+origData <- t(pcax$x %*% t(pcax$rotation))
+colpal <- cc
+rd <- X[, 1:5]
+lin <- getLineages(rd, clusterLabels = clus.labels, start.clus = "1", end.clus = "4")
+crv <- getCurves(lin)
+plot(X[, 1:2], col = colpal[as.factor(clus.labels)], pch = 16)
+lines(crv)
+
+suppressPackageStartupMessages(library(SummarizedExperiment))
+load("~/Downloads/GSE95601_oeHBCdiff_Cufflinks_eSet.rda")
+counts <- assayData(Cufflinks_eSet)$counts_table
+counts <- counts[!apply(counts, 1, function(row) any(is.na(row))), ]
+counts <- counts[, colnames(counts) %in% colnames(origData)]
+keep <- rowSums(edgeR::cpm(counts) > 5) >= 15
+countsFiltered <- counts[keep, ]
+countsFiltered <- countsFiltered[-grep(rownames(countsFiltered), pattern="ERCC"),]
+
+# batch from Github
+library(scone)
+library(edgeR)
+load("~/p63-HBC-diff/output/clust/oeHBCdiff/oeHBCdiff_scone.Rda")
+batch <- droplevels(colData(scone_out)$batch[match(colnames(countsFiltered), rownames(colData(scone_out)))])
+run <- droplevels(phenoData(Cufflinks_eSet)[[3]])[colnames(exprs(Cufflinks_eSet)) %in% colnames(origData)]
+
+library(zinbwave)
+library(BiocParallel)
+library(doParallel)
+NCORES <- 2
+registerDoParallel(NCORES)
+register(DoparParam())
+
+core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = clus.labels, batch = batch))
+#zinb_c <- zinbFit(core, X = '~ clusLabel + batch', commondispersion = TRUE)
+
+#save(zinb_c,file="~/zinbFletcherTradeSeq.rda")
+load("~/zinbFletcherTradeSeq.rda")
+weights <- computeObservationalWeights(zinb_c, countsFiltered)
+
+######## look at IC to get K
+library(tradeSeq)
+k <- 3:30
+infMat <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=250, ncores=2)
+
+# plot BIC and AIC for 16 random genes
+rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$BIC[ii,], type='b')
+rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$AIC[ii,], type='b')
+
+
+### verify AIC calculation
+# hlp <- fitGAM(counts=countsFiltered[1:100,], pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights)
+# m <- hlp[[1]]
+# summ <- summary(m)
+# # how AIC is calculated:
+# summ$family$aic
+# ll <- summ$sp.criterion #is this the REML?
+#
+# 2*ll + 2*sum(summ$edf[1]) ; m$aic #does not correspond
+#
+# getAIC <- function(model){
+#   summ <- summary(model)
+#   ll <- summ$sp.criterion #REML
+#   aic <- 2*ll + 2*summ$edf[1]
+#   return(aic)
+# }
+#
+# aicIk <- unlist(lapply(hlp, getAIC))
+# aicGam <- unlist(lapply(hlp, function(x) x$aic))
+# plot(aicIk, aicGam) #ok
+#
+# getBIC <- function(model){
+#   summ <- summary(model)
+#   ll <- summ$sp.criterion #REML
+#   n <- nrow(model$model) #sample size
+#   bic <- 2*ll + summ$edf[1]*log(n)
+#   return(bic)
+# }
+#
+# bicIk <- unlist(lapply(hlp, getBIC))
+# plot(aicIk, bicIk)
+
+```

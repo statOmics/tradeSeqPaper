@@ -1,0 +1,60 @@
+---
+title: "evaluate K Paul et al. data"
+author: "Koen Van den Berge"
+date: "6/22/2019"
+output: html_document
+---
+
+```{r}
+#setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/case/paul/")
+
+cell_type_color <- c("Basophils" = "#E088B8",
+                    "Dendritic cells" = "#46C7EF",
+                    "Eosinophls" = "#EFAD1E",
+                    "Erythrocyte" = "#8CB3DF",
+                    "Monocytes" = "#53C0AD",
+                    "Multipotent progenitors" = "#4EB859",
+                    "GMP" = "#D097C4",
+                    "Megakaryocytes" = "#ACC436",
+                    "Neutrophils" = "#F5918A",
+                    'NA' = '#000080')
+
+### no internet:  use data stored in tradeSeq package
+#data(se,package="tradeSeq")
+library(SingleCellExperiment)
+library(slingshot)
+library(RColorBrewer)
+
+download.file(
+  "https://github.com/statOmics/tradeSeqPaper/raw/master/data/se_paul.rda",
+  destfile = "./se_paul.rda")
+load("./se_paul.rda")
+rd <- reducedDim(se)
+set.seed(97)
+cl <- kmeans(rd, centers = 7)$cluster
+plot(rd, col = brewer.pal(9, "Set1")[cl], pch = 16, asp = 1)
+library(slingshot)
+lin <- getLineages(rd, clusterLabels = cl, start.clus = 4)
+plot(rd, col = brewer.pal(9, "Set1")[cl], xlab = "UMAP1", ylab = "UMAP2")
+lines(lin, lwd = 2)
+crv <- getCurves(lin)
+plot(rd, col = brewer.pal(9, "Set1")[cl], main = "color by cluster", xlab = "UMAP1", ylab = "UMAP2")
+lines(crv, lwd = 2)
+plot(rd, col = cell_type_color[colData(se)$cell_type2], main = "color by cell type", xlab = "UMAP1", ylab = "UMAP2", pch = 16)
+lines(crv, lwd = 2)
+counts <- as.matrix(assays(se)$counts)
+
+
+######## look at AIC to get K
+library(tradeSeq)
+infMat <- evaluateK(counts=counts, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), k=3:20, nGenes=250, ncores=2)
+
+# plot BIC and AIC for 16 random genes
+rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$BIC[ii,], type='b')
+rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$AIC[ii,], type='b')
+
+
+## we used only 250 genes. reproducible with different seed?
+infMat2 <- evaluateK(counts=counts, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), k=3:20, nGenes=250, ncores=2, seed=2)
+
+```
