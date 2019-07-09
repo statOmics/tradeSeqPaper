@@ -123,7 +123,7 @@ for(datasetIter in 1:10){
   names(sf) <- colnames(normCounts)
   # dfAnnotation
   dfAnn <- data.frame(Sample=colnames(counts), Condition=condition, Time=truePseudotime)
-  # Even with supplies size factors, it errors because it still attempts to calculate
+  # Even with supplied size factors, it errors because it still attempts to calculate
   # the size factors for dispersion estimation with DESeq2. Do it manually.
   library(DESeq2)
   dds <- suppressWarnings( DESeqDataSetFromMatrix(
@@ -135,6 +135,7 @@ for(datasetIter in 1:10){
   vecDispersionsInv <- mcols(dds)$dispersion
   vecDispersions <- 1/vecDispersionsInv
   names(vecDispersions) <- rownames(dds)
+  # now run ImpulseDE2
   imp <- runImpulseDE2(matCountData=round(normCounts), dfAnnotation=dfAnn, boolCaseCtrl=TRUE, vecSizeFactorsExternal=sf, vecDispersionsExternal=vecDispersions, scaNProc=2)
 
 

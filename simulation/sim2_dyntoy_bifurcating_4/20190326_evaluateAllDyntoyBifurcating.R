@@ -5,6 +5,9 @@ library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+library(BiocParallel)
+library(doParallel)
+NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type="continuous"))
 datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
 
@@ -20,7 +23,7 @@ datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInfer
 #pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/lineages.pdf")
 for(datasetIter in 1:10){
 
-  pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
+  #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
 
   data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
@@ -71,7 +74,7 @@ for(datasetIter in 1:10){
   ### fit smoothers on raw data
   cWeights <- slingCurveWeights(crv)
   pseudoT <- slingPseudotime(crv, na=FALSE)
-  gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, verbose=FALSE)
+  gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, nknots=4)
 
   # Test for differences at end point
   endRes <- diffEndTest(gamList)
@@ -156,23 +159,10 @@ for(datasetIter in 1:10){
     cellWeightsMon[gid$group_id %in% "M2",which.max(colSums(cWeights[gid$group_id %in% "M2",]))] <- 1
     cellWeightsMon[gid$group_id %in% "M4",which.max(colSums(cWeights[gid$group_id %in% "M4",]))] <- 1
 
-    gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
+    gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, nknots=4)
     resPatternMon <- patternTest(gamListMon)
     resEndMon <- diffEndTest(gamListMon)
   }
-
-  # tradeSeq on true time and weights
-  ### tradeSeq on true pseudotime
-  pst <- matrix(truePseudotime, nrow=ncol(counts),ncol=2, byrow=FALSE)
-  gamListTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=slingCurveWeights(crv), verbose=FALSE)
-  # end point test
-  waldEndPointResTrueTime <- diffEndTest(gamListTrueTime)
-  padjWaldTrueTime <- p.adjust(waldEndPointResTrueTime$pvalue,"fdr")
-  sum(padjWaldTrueTime<=0.05)
-  # pattern test
-  patternResTrueTime <- patternTest(gamListTrueTime)
-  padjPatternTrueTime <- p.adjust(patternResTrueTime$pvalue,"fdr")
-  sum(padjPatternTrueTime<=0.05, na.rm=TRUE)
 
   # GPfates
   logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
@@ -188,14 +178,47 @@ for(datasetIter in 1:10){
   GPfatesBif <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/GPfatesBifStats.txt", header=FALSE)
   colnames(GPfatesBif) <- c("bif_ll", "amb_ll", "shuff_bif_ll", "shuff_amb_ll", "phi0_corr", "D", "shuff_D")
 
-
   # GPfates weights + tradeSeq
   # based on true pseudotime
-  gamListGPfatesTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=GPfatesWeights, verbose=FALSE)
+  pst <- matrix(truePseudotime, nrow=ncol(counts),ncol=2, byrow=FALSE)
+  gamListGPfatesTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=GPfatesWeights, nknots=4)
   # end point test
   waldEndPointResTrueTimeGPfates <- diffEndTest(gamListGPfatesTrueTime)
   # pattern test
   patternResTrueTimeGPfates <- patternTest(gamListGPfatesTrueTime)
+
+  ## ImpulseDE2
+  library(ImpulseDE2)
+  ## use same cell assignment as tradeSeq
+  m <- gamList[[1]]
+  branch <- rep(NA, ncol(counts))
+  time <- rep(NA, ncol(counts))
+  branch[m$model$l1==1] <- "A"
+  time[m$model$l1==1] <- pseudoT[m$model$l1==1,1]
+  branch[m$model$l2==1] <- "B"
+  time[m$model$l2==1] <- pseudoT[m$model$l2==1,2]
+  condition <- ifelse(branch=="A","control","case")
+  # ImpulseDE2 cannot handle datasets where every gene contains at least one zero.
+  # since then it errors on the DESeq2 size factor estimation. Since the data is
+  # already quantile normalized, we provide a size factor of 1 as input.
+  sf <- rep(1,ncol(normCounts)) #data is already normalized
+  names(sf) <- colnames(normCounts)
+  # dfAnnotation
+  dfAnn <- data.frame(Sample=colnames(counts), Condition=condition, Time=time)
+  # Even with supplied size factors, it errors because it still attempts to calculate
+  # the size factors for dispersion estimation with DESeq2. Do it manually.
+  library(DESeq2)
+  dds <- suppressWarnings( DESeqDataSetFromMatrix(
+                    countData = round(normCounts),
+                    colData = dfAnn,
+                    design = ~Condition+Condition:Time) )
+  dds <- estimateSizeFactors(dds, type="poscounts")
+  dds <- estimateDispersions(dds)
+  vecDispersionsInv <- mcols(dds)$dispersion
+  vecDispersions <- 1/vecDispersionsInv
+  names(vecDispersions) <- rownames(dds)
+  # now run ImpulseDE2
+  imp <- runImpulseDE2(matCountData=round(normCounts), dfAnnotation=dfAnn, boolCaseCtrl=TRUE, vecSizeFactorsExternal=sf, vecDispersionsExternal=vecDispersions, scaNProc=2)
 
   ## performance
   library(iCOBRA)
@@ -213,6 +236,7 @@ for(datasetIter in 1:10){
                       tradeSeq_GPfates_pattern=patternResTrueTimeGPfates$pval,
                       tradeSeq_Monocle2_end=resEndMon$pvalue,
                       tradeSeq_Monocle2_pattern=resPatternMon$pvalue,
+                      ImpulseDE2=imp$dfImpulseDE2Results$p,
                         row.names=rownames(counts))
   score <- data.frame(GPfates=GPfatesBif$D,
                         row.names=rownames(counts))

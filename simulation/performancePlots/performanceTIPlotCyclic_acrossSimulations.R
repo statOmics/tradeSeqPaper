@@ -15,16 +15,16 @@ library(dplyr)
 
 ### prepare performance plots ####
 cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
-          "#e41a1c", "#e78ac3", "#ff7f00")
+          "#e41a1c", "#e78ac3", "#ff7f00", "dodgerblue")
 names(cols) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                  "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                  "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                 "BEAM", "GPfates", "edgeR")
-linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 6))
+                 "BEAM", "GPfates", "edgeR", "tradeSeq_slingshot_UMAP_assoc")
+linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 7))
 names(linetypes) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                       "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                       "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                      "BEAM", "GPfates", "edgeR")
+                      "BEAM", "GPfates", "edgeR", "tradeSeq_slingshot_UMAP_assoc")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -75,6 +75,7 @@ for(ii in 1:length(cobraFiles)){
 p1 <- plot_grid(bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
            bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
         nrow=2, ncol=5)
+p1
 
 plotsBif <- sapply(cobraFiles, function(file){
   cobra <- readRDS(file)

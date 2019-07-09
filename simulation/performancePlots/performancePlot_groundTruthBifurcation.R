@@ -15,8 +15,8 @@ library(dplyr)
 
 
 ### prepare performance plots ####
-cols <- c(tradeSeq_diffEnd="#C6DBEF", tradeSeq_pattern="#08306B", BEAM="#e41a1c", ImpulseDE2="darkkhaki", tradeSeq_diffEnd_3k="dodgerblue", tradeSeq_pattern_3k="steelblue")
-linetypes <- c(tradeSeq_diffEnd="solid", tradeSeq_pattern="solid", BEAM="solid", ImpulseDE2="solid", tradeSeq_diffEnd_3k="solid", tradeSeq_pattern_3k="solid")
+cols <- c(tradeSeq_diffEnd_4k="#C6DBEF", tradeSeq_pattern_4k="#08306B", BEAM="#e41a1c", ImpulseDE2="darkkhaki", tradeSeq_diffEnd_3k="dodgerblue", tradeSeq_pattern_3k="steelblue")
+linetypes <- c(tradeSeq_diffEnd_4k="solid", tradeSeq_pattern_4k="solid", BEAM="solid", ImpulseDE2="solid", tradeSeq_diffEnd_3k="solid", tradeSeq_pattern_3k="solid")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -56,6 +56,8 @@ plotPerformanceCurve <- function(cobraObject){
 
 for(ii in 1:length(cobraFiles)){
     cobra <- readRDS(cobraFiles[ii])
+    # rm tradeSeq with 10 knots
+    pval(cobra) <- pval(cobra)[,!colnames(pval(cobra)) %in% c("tradeSeq_diffEnd", "tradeSeq_pattern")]
     assign(paste0("bifplot",ii),plotPerformanceCurve(cobra))
 }
 
@@ -65,6 +67,8 @@ p1 <- plot_grid(bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
 
 plotsBif <- sapply(cobraFiles, function(file){
   cobra <- readRDS(file)
+  # rm tradeSeq with 10 knots
+  pval(cobra) <- pval(cobra)[,!colnames(pval(cobra)) %in% c("tradeSeq_diffEnd", "tradeSeq_pattern")]
   plotPerformanceCurve(cobra)
 })
 resPlots <- plotsBif[seq(1,length(plotsBif),by=9)] # get relevant data frame
