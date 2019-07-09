@@ -5,6 +5,9 @@ library(tradeSeq)
 library(edgeR)
 library(rafalib)
 library(wesanderson)
+library(BiocParallel)
+library(doParallel)
+NCORES <- 2
 
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
@@ -18,13 +21,12 @@ library(wesanderson)
 dataAll <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/datasets_for_koen.rds")
 
 
-#for(datasetIter in seq(1:5,7:10)){
 for(datasetIter in 1:10){
 
   pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/dataset",datasetIter,".pdf"))
 
   data <- dataAll[[datasetIter]]
-  counts <- t(data$counts)
+  counts <- as.matrix(t(data$counts))
   falseGenes <- data$feature_info$gene_id[!data$feature_info$housekeeping]
   nullGenes <- data$feature_info$gene_id[data$feature_info$housekeeping]
 
@@ -47,17 +49,11 @@ for(datasetIter in 1:10){
   # fit smoothers on raw data
   cWeights <- rep(1,ncol(counts))
   pseudoT <- matrix(pcc$lambda,nrow=ncol(counts),ncol=1)
-  gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, verbose=TRUE)
+  gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, nknots=5)
 
   # Test for association of expression with the trajectory
   assocTestRes <- associationTest(gamList)
   #hist(assocTestRes$pvalue)
-
-  ### tradeSeq on true pseudotime
-  pst <- matrix(truePseudotime, nrow=ncol(counts), ncol=1, byrow=FALSE)
-  gamListTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=cWeights, verbose=TRUE)
-  assocTestTrueRes <- associationTest(gamListTrueTime)
-  #hist(assocTestTrueRes$pvalue)
 
   # Monocle 3
   library(monocle)
@@ -77,8 +73,17 @@ for(datasetIter in 1:10){
   pr_graph_test <- principalGraphTest(cds, k=3, cores=1)
   print(plot_cell_trajectory(cds,color_by="louvain_component") + ggtitle(paste0("Dataset ",datasetIter))) # fails to discover cyclic pattern.
 
+  # slingshot in UMAP space
+  umapRD <- t(cds@reducedDimS)
+  plot(umapRD, pch=16, asp = 1, col=pal[g], main="UMAP")
+  pccUMAP <- principal_curve(umapRD, smoother="periodic_lowess")
+  lines(x=pcc$s[order(pccUMAP$lambda),1], y=pcc$s[order(pccUMAP$lambda),2], col="red", lwd=2)
 
-  # Performance plots
+  # tradeSeq on UMAP slingshot
+  pseudoT <- matrix(pccUMAP$lambda,nrow=ncol(counts),ncol=1)
+  gamListUMAP <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, nknots=5)
+  assocTestResUMAP <- associationTest(gamListUMAP)
+
 
   ########
   # FDP-TPR
@@ -90,8 +95,8 @@ for(datasetIter in 1:10){
 
   ### estimated pseudotime
   pval <- data.frame( tradeSeq_slingshot_assoc=assocTestRes$pval,
+                      tradeSeq_slingshot_UMAP_assoc=assocTestResUMAP$pval,
                       Monocle3=pr_graph_test$pval,
-                      tradeSeq_slingshot_assoc_trueTime=assocTestTrueRes$pvalue,
                         row.names=rownames(counts))
   cobra <- COBRAData(pval=pval, truth=truth)
   saveRDS(cobra, file=paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/datasets/cobra",datasetIter,".rds"))
