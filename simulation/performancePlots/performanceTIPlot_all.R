@@ -122,16 +122,16 @@ rm(data, counts, truePseudotime, g, normCounts, pca, rd, crv, lin, cl)
 
 ### prepare performance plots ####
 cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
-          "#e41a1c", "#e78ac3", "#ff7f00")
+          "#e41a1c", "#e78ac3", "#ff7f00", "darkgoldenrod1")
 names(cols) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                  "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                  "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                 "BEAM", "GPfates", "edgeR")
-linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 6))
+                 "BEAM", "GPfates", "edgeR", "ImpulseDE2")
+linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 7))
 names(linetypes) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                       "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                       "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                      "BEAM", "GPfates", "edgeR")
+                      "BEAM", "GPfates", "edgeR", "ImpulseDE2")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",

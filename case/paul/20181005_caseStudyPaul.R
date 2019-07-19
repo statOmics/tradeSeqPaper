@@ -140,27 +140,27 @@ counts <- as.matrix(assays(se)$counts)
 ######## tradeSeq analysis
 library(mgcv)
 library(tradeSeq)
-gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE)
-load("~/gamListPaul.rda")
+gamListPaul <- fitGAM(counts, pseudotime=slingPseudotime(crv,na=FALSE), cellWeights=slingCurveWeights(crv), verbose=TRUE, nknots=6)
+load("~/gamListPaul_6k.rda")
 # check convergence: all genes converged.
 sum(unlist(lapply(gamListPaul, function(m) m$converged)))
 length(gamListPaul)
-#end point test: 2207 (2266) genes
+#end point test: 2233 genes
 waldEndResPaul <- diffEndTest(gamListPaul, global = TRUE, pairwise = FALSE)
 sum(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)
 endGenes <- rownames(counts)[which(p.adjust(waldEndResPaul$pvalue, "fdr") <= 0.05)]
-# pattern test: 2425 genes
+# pattern test: 2558 genes
 patternResPaul <- patternTest(gamListPaul)
 sum(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05, na.rm = TRUE)
 patternGenes <- rownames(counts)[which(p.adjust(patternResPaul$pvalue, "fdr") <= 0.05)]
-# start point test: 2015 genes
+# start point test: 2076 genes
 waldStartResPaul <- startVsEndTest(gamListPaul, global = TRUE, lineages = FALSE)
 sum(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)
 startGenes <- rownames(counts)[which(p.adjust(waldStartResPaul$pvalue, "fdr") <= 0.05)]
 
 ## plot 6 most significant progenitor genes
 library(SummarizedExperiment)
-png("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/rdPlotStartGenesPaul.png", units = "in", width = 12, height = 9, res = 330)
+png("/Users/koenvandenberge/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/rdPlotStartGenesPaul.png", units = "in", width = 12, height = 9, res = 100)
 oStart <- order(waldStartResPaul$waldStat, decreasing = TRUE)
 mypar(mfrow = c(2, 3))
 k <- 0
@@ -454,7 +454,7 @@ yhatPatScaled <- t(scale(t(yhatPat)))
 
 rsec <- RSEC(t(yhatPatScaled[1:500, ]),
   isCount = FALSE,
-  reduceMethod = "PCA", nReducedDims = 10, combineMinSize = 6,
+  reduceMethod = "PCA", nReducedDims = 10,
   ncores = 2, random.seed = 176201, verbose = TRUE
 )
 #rsec <- RSEC(t(yhatPatScaled), isCount = FALSE,
@@ -536,7 +536,7 @@ plotSmoothersIk <- function(m, nPoints = 100, ...){
 
 ###### figure for paper
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul_v2.png", width = 9, height = 6, units = "in", res = 200)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/figCasePaul_v3.png", width = 9, height = 6, units = "in", res = 200)
 rafalib::mypar()
 # layout(matrix(c(1,1, 2,3, 8,9,
 #               1,1, 4,5, 10,11,
@@ -579,15 +579,15 @@ legend("bottomleft", c("Leukocyte lineage", "Erythrocyte lineage"),
 )
 mtext("b", at = -0.21, font = 2, cex = 4 / 3)
 
-### panel C: four interesting genes involved in heamatopoiesis.
+### panel C: interesting genes involved in heamatopoiesis.
 palette(c("orange", "darkseagreen3"))
-plotSmoothersIk(gamListPaul[["Prtn3"]], main = "Prtn3")
+plotSmoothersIk(gamListPaul[["Mpo"]], main = "Mpo")
 mtext("c", at = -0.5, font = 2, cex = 4 / 3)
-plotSmoothersIk(gamListPaul[["Mpo"]], main = "Mpo", ylim = c(0, 5))
-plotSmoothersIk(gamListPaul[["Car2"]], main = "Car2", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Prtn3"]], main = "Prtn3", ylim = c(0, 5))
 plotSmoothersIk(gamListPaul[["Ctsg"]], main = "Ctsg", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Car2"]], main = "Car2", ylim = c(0, 5))
 plotSmoothersIk(gamListPaul[["Elane"]], main = "Elane", ylim = c(0, 5))
-plotSmoothersIk(gamListPaul[["Car1"]], main = "Car1", ylim = c(0, 5))
+plotSmoothersIk(gamListPaul[["Srgn"]], main = "Srgn", ylim = c(0, 5))
 
 ### panel D: clusters of gene families
 #mypar(mfrow=c(3,2), bty='l')

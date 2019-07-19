@@ -46,8 +46,17 @@ counts <- as.matrix(assays(se)$counts)
 
 
 ######## look at AIC to get K
+rafalib::mypar()
 library(tradeSeq)
 infMat <- evaluateK(counts=counts, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), k=3:20, nGenes=250, ncores=2)
+
+# with standard errors
+aicAvg <- colMeans(infMat$AIC, na.rm=TRUE)
+seAic <- sqrt(matrixStats::colVars(infMat$AIC))/sqrt(nrow(infMat$AIC))
+plot(x=3:20, y=aicAvg, type='b', ylim=c(3700, 4200), xlab="Number of knots", ylab="Average AIC")
+lines(x=3:20, y=aicAvg + seAic, lty=2)
+lines(x=3:20, y=aicAvg - seAic, lty=2)
+legend("topright",c("average", "average +/- SE"), lty=c(1,2), bty='n')
 
 # plot BIC and AIC for 16 random genes
 rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$BIC[ii,], type='b')

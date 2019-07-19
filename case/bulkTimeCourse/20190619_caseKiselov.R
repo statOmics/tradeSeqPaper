@@ -45,10 +45,12 @@ rownames(time) <- colnames(counts)
 weights <- matrix(0, nrow=ncol(counts), ncol=2)
 weights[1:(ncol(counts)/2), 1] <- 1
 weights[(ncol(counts)/2+1):ncol(counts), 2] <- 1
-gamList <- fitGAM(counts, pseudotime=time, cellWeights=weights, nknots=4)
 
-## test for pattern
-resPat <- patternTest(gamList, nPoints=8)
+## evaluate optimal K
+infMat <- evaluateK(counts, pseudotime=time, cellWeights=weights, nGenes=250, k=3:6)
+
+## fit GAM
+gamList <- fitGAM(counts, pseudotime=time, cellWeights=weights, nknots=6)
 
 ## look at fit for six random genes
 set.seed(81)
@@ -56,10 +58,26 @@ id <- sample(1:length(gamList), size=6)
 par(mfrow=c(2,3))
 for(ii in 1:6) plotSmoothers(gamList[[id[ii]]], main=resPat[id[ii],"pvalue"], ylim=c(3,9))
 
+
+## test for different expression pattern
+resPat <- patternTest(gamList, nPoints=8)
+
 ## statistical significance
 hist(resPat$pvalue)
 sum(p.adjust(resPat$pvalue, "fdr") <= 0.01, na.rm=TRUE)
-# in the paper, they did pairwise comparisons with DESeq2 and found 7486 DE genes. We have 7532, which is very comparable.
+# in the paper, they did pairwise comparisons with DESeq2 and found 7486 DE genes. We have 7184, which is very comparable.
+deTradeSeq <- rownames(counts)[p.adjust(resPat$pvalue, "fdr") <= 0.01]
+
+### compare with list from paper
+download.file("https://github.com/wikiselev/rnaseq.mcf10a/blob/master/data/diff.expr.all.rda?raw=true", destfile="~/Downloads/diff.expr.all.rda")
+load("~/Downloads/diff.expr.all.rda")
+sum(diff.expr.pten.wt$padj < 0.01, na.rm=TRUE) #7825: PTEN-KO
+sum(diff.expr.ki.wt$padj < 0.01, na.rm=TRUE)  #7486
+deOriginal <- rownames(diff.expr.ki.wt)[which(diff.expr.ki.wt$padj <= 0.01)]
+
+
+## overlap
+mean(deTradeSeq %in% deOriginal)
 
 
 ## plot six most significant genes.
