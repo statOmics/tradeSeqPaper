@@ -58,6 +58,10 @@ library(tradeSeq)
 k <- 3:30
 infMat <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=250, ncores=2)
 
+infMat2 <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=250, ncores=2,
+                     seed=1)
+
+
 # plot BIC and AIC for 16 random genes
 rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$BIC[ii,], type='b')
 rafalib::mypar(mfrow=c(4,4)); for(ii in 1:16) plot(infMat$AIC[ii,], type='b')

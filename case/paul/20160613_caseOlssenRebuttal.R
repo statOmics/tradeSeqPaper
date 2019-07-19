@@ -61,5 +61,17 @@ FQnorm <- function(counts, type="median"){
   return(norm)
 }
 dataNorm <- FQnorm(dataGmp)
-pc <- prcomp(log1p(t(dataNorm)))
+vars <- matrixStats::rowVars(dataNorm)
+oVars <- order(vars, decreasing=TRUE)
+pc <- prcomp(log1p(t(dataNorm[oVars[1:500],])))
 plot(pc$x[,1:2], col=colClusters, pch=16)
+
+
+
+pal <- wesanderson::wes_palette("Zissou1", 10, type = "continuous")
+# Irf8
+g <- Hmisc::cut2(dataNorm["Irf8",],g=10)
+plot(pc$x[,1:2], col=pal[g], pch=16)
+# S100a6
+g <- Hmisc::cut2(dataNorm["Elane",],g=10)
+plot(pc$x[,1:2], col=pal[g], pch=16)

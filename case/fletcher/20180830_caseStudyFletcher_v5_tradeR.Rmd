@@ -80,7 +80,6 @@ register(DoparParam())
 
 core <- SummarizedExperiment(countsFiltered, colData = data.frame(clusLabel = clus.labels, batch = batch))
 #zinb_c <- zinbFit(core, X = '~ clusLabel + batch', commondispersion = TRUE)
-
 #save(zinb_c,file="~/zinbFletcherTradeSeq.rda")
 load("~/zinbFletcherTradeSeq.rda")
 weights <- computeObservationalWeights(zinb_c, countsFiltered)
@@ -89,9 +88,9 @@ weights <- computeObservationalWeights(zinb_c, countsFiltered)
 
 
 ```{r fitGAM}
-#gamList <- tradeSeq::fitGAM(countsFiltered, U=model.matrix(~-1+batch), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights)
-#save(gamList,file="~/gamListOE_tradeSeq.rda")
-load("~/gamListOE_tradeSeq.rda")
+#gamList <- tradeSeq::fitGAM(countsFiltered, U=model.matrix(~-1+batch), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, nknots=6)
+#save(gamList,file="~/gamListOE_tradeSeq_6k.rda")
+load("~/gamListOE_tradeSeq_6k.rda")
 ## check convergence
 converged <- unlist(lapply(gamList, function(m){
   if(class(m)=="try-error"){
@@ -189,24 +188,58 @@ while (i < 10) {
 uniqGamEndFletcher <- rownames(countsFiltered)[uniqueGamEndId]
 write.table(uniqGamEndFletcher, file = "~/uniqGamEndFletcher.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 # submit to http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp for top 20 gene sets
-overlapUniqEndGam <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/case/fletcher/overlapUniqGamEndFletcher")
+overlapUniqEndGam <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/case/fletcher/overlapUniqGamEndFletcher_6k")
 overlapSets <- overlapUniqEndGam[10:30]
 overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x, split = "\t"))
 gsNames <- unname(unlist(lapply(overlapSetsSplit, "[[", 1)))
 genesInSet <- unname(unlist(lapply(overlapSetsSplit, "[[", 2)))
 genesInOverlap <- unname(unlist(lapply(overlapSetsSplit, "[[", 4)))
+pvalUniqGam <- unname(unlist(lapply(overlapSetsSplit, "[[", 6)))
 qval <- unname(unlist(lapply(overlapSetsSplit, "[[", 7)))
 gsNames <- tolower(gsNames)
 gsNames <- gsub(x = gsNames, pattern = "_", replacement = " ")
 gsNames[-1] <- unname(sapply(gsNames[-1], function(x) substr(x, 4, nchar(x))))
-tab <- data.frame(
+tabUniqGam <- data.frame(
   geneSet = gsNames[-1],
-  overlap = genesInOverlap[-1],
-  genesInSet = genesInSet[-1],
+  overlap = as.numeric(genesInOverlap[-1]),
+  genesInSet = as.numeric(genesInSet[-1]),
   qvalue = qval[-1]
 )
 library(xtable)
-xtable(tab)
+xtable(tabUniqGam)
+
+## figure with overlap as scale
+pval <- pvalUniqGam
+tab <- tabUniqGam
+library(scales)
+genesInComp <- 1576 #nr of genes assessed by MSigDB
+genesInUniverse <- 45956 #according to MSigDB
+background <- genesInComp / genesInUniverse
+tabIk <- tab[nrow(tab):1,]
+setOverlap <- as.numeric(as.character(tabIk$overlap))/as.numeric(as.character(tabIk$genesInSet))
+
+pal <- colorRampPalette(c("red","yellow"))(20)
+hlpBar <- barplot(setOverlap, horiz=TRUE, xlim=c(0,0.2), col=alpha(pal[order(as.numeric(as.character(tabIk$qvalue)), decreasing=FALSE)],.2))
+barplot(rep(background,20), horiz=TRUE, add=TRUE, col=alpha("grey",.3))
+abline(v=background, col="red", lty=2, lwd=2)
+text(y=hlpBar, x=setOverlap, label=paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet)), pos=4, cex=1)
+text(y=hlpBar, x=rep(0,20), label=as.character(tabIk$geneSet), pos=4, cex=.8, font=2)
+
+## figure with p-value as scale
+library(scales)
+genesInComp <- 1576 #nr of genes assessed by MSigDB
+genesInUniverse <- 45956 #according to MSigDB
+background <- genesInComp / genesInUniverse
+tabIk <- tab[nrow(tab):1,]
+pvalScale <- rev(-log10(as.numeric(pval[-1])))
+
+pal <- colorRampPalette(c("red","yellow"))(20)
+hlpBar <- barplot(pvalScale, horiz=TRUE, xlim=c(0,66), col=alpha(pal[order(as.numeric(as.character(tabIk$qvalue)), decreasing=FALSE)],.2),
+xlab="-log10 p-value")
+#barplot(rep(background,20), horiz=TRUE, add=TRUE, col=alpha("grey",.3))
+#abline(v=background, col="red", lty=2, lwd=2)
+text(y=hlpBar, x=pvalScale, label=paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet)), pos=4, cex=1)
+text(y=hlpBar, x=rep(0,20), label=as.character(tabIk$geneSet), pos=4, cex=1.1, font=2)
 
 ```
 
@@ -225,7 +258,7 @@ while (i < 10) {
 # for paper
 source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/case/fletcher/plotSmoothersFletcher.R")
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/topGenesFletcherPattern.png", width = 6, height = 7, units = "in", res = 300)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/topGenesFletcherPattern_6k.png", width = 6, height = 7, units = "in", res = 300)
 mypar(mfrow = c(3, 2))
 i <- 0
 while (i < 6) {
@@ -248,24 +281,25 @@ allCompGenes <- names(which(rowSums(res) == 4))
 write.table(allCompGenes, file = "~/allCompGenes.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 # submit these in http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp
 
-overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapCellCycleOE")
+overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapCellCycleOE_6k")
 overlapSets <- overlap[10:30]
 overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x, split = "\t"))
 gsNames <- unname(unlist(lapply(overlapSetsSplit, "[[", 1)))
 genesInSet <- unname(unlist(lapply(overlapSetsSplit, "[[", 2)))
 genesInOverlap <- unname(unlist(lapply(overlapSetsSplit, "[[", 4)))
 qval <- unname(unlist(lapply(overlapSetsSplit, "[[", 7)))
+pvalPatternOE <- unname(unlist(lapply(overlapSetsSplit, "[[", 6)))
 gsNames <- tolower(gsNames)
 gsNames <- gsub(x = gsNames, pattern = "_", replacement = " ")
 gsNames[-1] <- unname(sapply(gsNames[-1], function(x) substr(x, 4, nchar(x))))
-tab <- data.frame(
+tabPatternOE <- data.frame(
   geneSet = gsNames[-1],
   overlap = genesInOverlap[-1],
   genesInSet = genesInSet[-1],
   qvalue = qval[-1]
 )
-# library(xtable)
-# xtable(tab)
+ library(xtable)
+ xtable(tabPatternOE)
 
 # cluster fitted values of genes significant for pattern test and create a heatmap.
 # or plot gene clusters their smoothing profiles
@@ -275,66 +309,13 @@ log(fitted(gamList[[1]]) + .1)
 
 # within lineage comparisons
 
-### cell cycle patterns within lineages: edgeR
-
-```{r cellCycleWithin}
-plot(x = levels(clus.labels), pch = 16, col = colpal)
-# colors 5,7,4 are last three clusters of SUS lineage
-# colors 2,14,10,9,11 are last 5 clusters of NEUR lineage
-# colors 1, 8, 5, 3, 2,14,10,9,11 are all clusters of NEUR lineage
-
-L <- matrix(0, nrow = ncol(fit$coefficients), ncol = 9)
-rownames(L) <- colnames(fit$coefficients)
-colnames(L) <- crv@lineages[[1]]
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 1] <- rep(-1 / 8, 8)
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 2] <- c(1, rep(-1 / 8, 7))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 3] <- c(-1, 1, rep(-1 / 8, 6))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 4] <- c(rep(-1 / 8, 2), 1, rep(-1 / 8, 5))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 5] <- c(rep(-1 / 8, 3), 1, rep(-1 / 8, 4))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 6] <- c(rep(-1 / 8, 4), 1, rep(-1 / 8, 3))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 7] <- c(rep(-1 / 8, 5), 1, rep(-1 / 8, 2))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 8] <- c(rep(-1 / 8, 6), 1, rep(-1 / 8, 1))
-L[c("clus.labels8", "clus.labels5", "clus.labels3", "clus.labels2", "clus.labels14", "clus.labels10", "clus.labels9", "clus.labels11"), 9] <- c(rep(-1 / 8, 7), 1)
-lrtList <- list()
-for (i in 1:ncol(L)) lrtList[[i]] <- zinbwave::glmWeightedF(fit, contrast = L[, i])
-
-
-cellGenes <- read.table("~/Downloads/GO_term_summary_20181001_091947.txt", header = TRUE, sep = "\t", row.names = NULL)
-cellGenes$MGI.Gene.Marker.ID <- as.character(cellGenes$MGI.Gene.Marker.ID)
-mean(cellGenes$MGI.Gene.Marker.ID %in% rownames(counts))
-mean(cellGenes$MGI.Gene.Marker.ID %in% rownames(countsFiltered))
-sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(countsFiltered))
-
-sumFoundMat <- matrix(NA, nrow = nrow(countsFiltered), ncol = 9)
-for (i in 1:length(lrtList)) {
-  pvals <- lrtList[[i]]$table$PValue
-  o <- order(pvals)
-  pvalsO <- pvals[o]
-  namesO <- rownames(lrtList[[i]])[o]
-  sumFound <- sapply(1:nrow(countsFiltered), function(ii) {
-    sum(cellGenes$MGI.Gene.Marker.ID %in% namesO[1:ii])
-  })
-  sumFoundMat[, i] <- sumFound
-}
-
-# aggregate cluster comparisons
-library(aggregation)
-pvalMatEdgeR <- do.call(cbind, lapply(lrtList, function(x) x$table$PValue))
-fisherP <- apply(pvalMatEdgeR, 1, fisher)
-names(fisherP) <- rownames(lrtList[[1]]$table)
-o <- order(fisherP)
-sumFoundFisher <- sapply(1:nrow(countsFiltered), function(ii) {
-  sum(cellGenes$MGI.Gene.Marker.ID %in% names(fisherP[o])[1:ii])
-})
-```
-
 ### cell cycle patterns within lineages: tradeSeq associationTest
 
 ```{r}
 assocRes <- associationTest(gamList, global = TRUE, lineages = TRUE)
 deAssoc1 <- rownames(assocRes)[p.adjust(assocRes$pvalue_1, "fdr") <= 0.05]
 deAssoc1 <- deAssoc1[!is.na(deAssoc1)]
-length(deAssoc1) # 1951 DE genes
+length(deAssoc1)
 
 o = order(assocRes$waldStat_1, decreasing=TRUE)
 write.table(head(assocRes[o,"waldStat_1",drop=FALSE], 2000), file="~/topGenesNeuronalLineage.txt", quote=FALSE, col.names=FALSE)
@@ -431,139 +412,6 @@ hlpClust <- function(hc, mat) {
 pheatmap(yScaled, cluster_cols = FALSE, show_rownames = FALSE, show_colnames = FALSE, cutree_rows = 5, clustering.method = "ward.D", annotation_col = annoCol, annotation_colors = annColors, annotation_names_col = FALSE, clustering_callback = hlpClust)
 ```
 
-# Cell cycle functional annotation
-
-
- pattern contrast between neuronal and sustentacular lineage should reveal cell cycle genes, since the cells in neuronal lineage undergo cell division, while the sustentacular lineage cells do not. Also this occurs in intermediary stages, and not at end stage, so we need the pattern test for this.
-  cell cycle gene set: http://www.informatics.jax.org/go/term/GO:0007049
- downloaded on October 1st 2018
-
-
-```{r cc}
-cellGenes <- read.table("~/Downloads/GO_term_summary_20181001_091947.txt", header = TRUE, sep = "\t", row.names = NULL)
-cellGenes$MGI.Gene.Marker.ID <- as.character(cellGenes$MGI.Gene.Marker.ID)
-mean(cellGenes$MGI.Gene.Marker.ID %in% rownames(counts))
-
-
-# we expect the cell cycle genes to have different patterns but to not be DE at end point.
-plot(x = log(endTestGam$waldStat_1vs3), y = log(resPat$waldStat_1vs3))
-# note that Wald stats are not directly comparable due to df.
-plot(x = endTestGam$waldStat_1vs3, y = resPat$waldStat_1vs3 / resPat$df_1vs3, log = "xy")
-abline(0, 1, col = "red")
-# compare p-values:
-logit <- function(x) log(x / (1 - x))
-plot(x = logit(endTestGam$pvalue_1vs3), y = logit(resPat$pvalue1vs3), pch = 16, cex = 2 / 3)
-
-# code from vignette, written by Hector:
-library(dplyr)
-compare <- inner_join(resPat %>%
-  mutate(
-    Gene = rownames(resPat),
-    pattern = waldStat_1vs3
-  ) %>%
-  select(Gene, pattern),
-endTestGam %>%
-  mutate(
-    Gene = rownames(endTestGam),
-    end = waldStat_1vs3
-  ) %>%
-  select(Gene, end),
-by = c("Gene" = "Gene")
-) %>%
-  mutate(transientScore = (min_rank(desc(end)))^2 +
-    (min_rank(pattern) - 1)^2)
-library(ggplot2)
-ggplot(compare, aes(x = log(pattern), y = log(end))) +
-  geom_point(aes(col = transientScore)) +
-  labs(
-    x = "endPointTest Wald Statistic (log scale)",
-    y = "patternTest Wald Statistic (log scale)"
-  ) +
-  scale_color_continuous(low = "yellow", high = "red") +
-  theme_classic()
-
-topTransient <- (compare %>% arrange(desc(transientScore)))
-
-
-
-sumFoundtradeSeq <- sapply(1:nrow(countsFiltered), function(ii) {
-  sum(cellGenes$MGI.Gene.Marker.ID %in% topTransient$Gene[1:ii])
-})
-
-
-## get range of cluster comparisons to check if the tradeSeq analysis improves upon ANY cluster comparison
-# in PCA plot, col=colpal[as.factor(clus.labels)]
-plot(x = levels(clus.labels), pch = 16, col = colpal)
-# colors 5,7,4 are last three clusters of SUS lineage
-# colors 2,14,10,9,11 are last 5 clusters of NEUR lineage
-L <- matrix(0, nrow = ncol(fit$coefficients), ncol = 15)
-rownames(L) <- colnames(fit$coefficients)
-L[c("clus.labels5", "clus.labels2"), 1] <- c(1, -1)
-L[c("clus.labels5", "clus.labels14"), 2] <- c(1, -1)
-L[c("clus.labels5", "clus.labels10"), 3] <- c(1, -1)
-L[c("clus.labels5", "clus.labels9"), 4] <- c(1, -1)
-L[c("clus.labels5", "clus.labels11"), 5] <- c(1, -1)
-L[c("clus.labels7", "clus.labels2"), 6] <- c(1, -1)
-L[c("clus.labels7", "clus.labels14"), 7] <- c(1, -1)
-L[c("clus.labels7", "clus.labels10"), 8] <- c(1, -1)
-L[c("clus.labels7", "clus.labels9"), 9] <- c(1, -1)
-L[c("clus.labels7", "clus.labels11"), 10] <- c(1, -1)
-L[c("clus.labels4", "clus.labels2"), 11] <- c(1, -1)
-L[c("clus.labels4", "clus.labels14"), 12] <- c(1, -1)
-L[c("clus.labels4", "clus.labels10"), 13] <- c(1, -1)
-L[c("clus.labels4", "clus.labels9"), 14] <- c(1, -1)
-L[c("clus.labels4", "clus.labels11"), 15] <- c(1, -1)
-lrtList <- list()
-for (i in 1:ncol(L)) lrtList[[i]] <- zinbwave::glmWeightedF(fit, contrast = L[, i])
-
-
-
-sumFoundMat <- matrix(NA, nrow = nrow(countsFiltered), ncol = 15)
-for (i in 1:length(lrtList)) {
-  pvals <- lrtList[[i]]$table$PValue
-  o <- order(pvals)
-  pvalsO <- pvals[o]
-  namesO <- rownames(lrtList[[i]])[o]
-  sumFound <- sapply(1:nrow(countsFiltered), function(ii) {
-    sum(cellGenes$MGI.Gene.Marker.ID %in% namesO[1:ii])
-  })
-  sumFoundMat[, i] <- sumFound
-}
-
-
-o <- order(endTestGam$waldStat_1vs3, decreasing = TRUE)
-sumFoundEnd <- sapply(1:nrow(countsFiltered), function(ii) {
-  sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(endTestGam[o, ])[1:ii])
-})
-
-o <- order(resPat$waldStat_1vs3, decreasing = TRUE)
-sumFoundPat <- sapply(1:nrow(countsFiltered), function(ii) {
-  sum(cellGenes$MGI.Gene.Marker.ID %in% rownames(resPat[o, ])[1:ii])
-})
-
-
-library(aggregation)
-pvalMatEdgeR <- do.call(cbind, lapply(lrtList, function(x) x$table$PValue))
-fisherP <- apply(pvalMatEdgeR, 1, fisher)
-names(fisherP) <- rownames(lrtList[[1]]$table)
-o <- order(fisherP)
-sumFoundFisher <- sapply(1:nrow(countsFiltered), function(ii) {
-  sum(cellGenes$MGI.Gene.Marker.ID %in% names(fisherP[o])[1:ii])
-})
-
-library(scales)
-plot(x = 1:nrow(countsFiltered), y = sumFoundPat, type = "l", log = "y", col = "darkseagreen3", lwd = 2)
-# lines(x=1:nrow(countsFiltered), y=sumFoundEnd, col="red")
-lines(x = 1:nrow(countsFiltered), y = sumFoundFisher, col = "red", lwd = 2)
-for (i in 1:15) lines(x = 1:nrow(countsFiltered), y = sumFoundMat[, i], col = alpha(colorRampPalette(c("lightblue", "darkblue"))(15)[i], .5))
-
-
-# we can also do a pattern test on a fixed region...
-# first check which cluster comparisons are performing that good.
-# 1, 6, 11 are performing best. Note that all of these involve a comparison of the INP1 cluster with the three other SUS clusters. Hence, it is this cluster that matters; the differences are local and this is thus probably not a good example.
-```
-
-
 # Check for HBC markers
 
 ```{r}
@@ -573,24 +421,67 @@ write.table(top250Genes, file = "~/startTestOETop250_tradeSeq.txt", row.names = 
 # submit to http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp for top 20 gene sets
 
 
-overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapStartTestOE_tradeSeq")
+overlap <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/overlapStartTestOE_tradeSeq_6k")
 overlapSets <- overlap[10:30]
 overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x, split = "\t"))
 gsNames <- unname(unlist(lapply(overlapSetsSplit, "[[", 1)))
 genesInSet <- unname(unlist(lapply(overlapSetsSplit, "[[", 2)))
 genesInOverlap <- unname(unlist(lapply(overlapSetsSplit, "[[", 4)))
+pvalStart <- unname(unlist(lapply(overlapSetsSplit, "[[", 6)))
 qval <- unname(unlist(lapply(overlapSetsSplit, "[[", 7)))
 gsNames <- tolower(gsNames)
 gsNames <- gsub(x = gsNames, pattern = "_", replacement = " ")
 gsNames[-1] <- unname(sapply(gsNames[-1], function(x) substr(x, 4, nchar(x))))
-tab <- data.frame(
+tabStart <- data.frame(
   geneSet = gsNames[-1],
   overlap = genesInOverlap[-1],
   genesInSet = genesInSet[-1],
   qvalue = qval[-1]
 )
 # library(xtable)
-# xtable(tab)
+# xtable(tabStart)
+```
+
+# figure of gene set enrichment
+
+```{r}
+library(scales)
+rafalib::mypar(mar=c(2.5,4,1.5,1),mfrow=c(1,3))
+pal <- colorRampPalette(c("red","yellow"))(20)
+
+## startVsEndTest: top 250 genes
+tabIk <- tabStart[nrow(tabStart):1,]
+pvalScale <- rev(-log10(as.numeric(pvalStart[-1])))
+hlpBar <- barplot(pvalScale, horiz=TRUE, xlim=c(0,22), col=alpha(pal[order(as.numeric(as.character(tabIk$qvalue)), decreasing=FALSE)],.2),
+xlab="-log10 p-value")
+#text(y=hlpBar, x=pvalScale, label=paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet)), pos=4, cex=1)
+txts <- paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet))
+for(ii in 1:20) mtext(txts[ii], side=2, at=hlpBar[ii,], las=1, cex=2/3, line=.2)
+text(y=hlpBar, x=rep(0,20), label=as.character(tabIk$geneSet), pos=4, cex=1.1, font=2)
+mtext("a", side=3, at=-2.5, font=2, cex=3/2)
+
+##  patternTest: genes significant in all three comparisons
+tabIk <- tabPatternOE[nrow(tabPatternOE):1,]
+pvalScale <- rev(-log10(as.numeric(pvalPatternOE[-1])))
+hlpBar <- barplot(pvalScale, horiz=TRUE, xlim=c(0,30), col=alpha(pal[order(as.numeric(as.character(tabIk$qvalue)), decreasing=FALSE)],.2),
+xlab="-log10 p-value")
+#text(y=hlpBar, x=pvalScale, label=paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet)), pos=4, cex=1)
+txts <- paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet))
+for(ii in 1:20) mtext(txts[ii], side=2, at=hlpBar[ii,], las=1, cex=2/3, line=.2)
+text(y=hlpBar, x=rep(0,20), label=as.character(tabIk$geneSet), pos=4, cex=1.1, font=2)
+mtext("b", side=3, at=-3, font=2, cex=3/2)
+
+##  genes unique in tradeSeq diffEnd (vs edgeR)
+tabIk <- tabUniqGam[nrow(tabUniqGam):1,]
+pvalScale <- rev(-log10(as.numeric(pvalUniqGam[-1])))
+hlpBar <- barplot(pvalScale, horiz=TRUE, xlim=c(0,66), col=alpha(pal[order(as.numeric(as.character(tabIk$qvalue)), decreasing=FALSE)],.2),
+xlab="-log10 p-value")
+#text(y=hlpBar, x=pvalScale, label=paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet)), pos=4, cex=1)
+txts <- paste0(as.character(tabIk$overlap),"/",as.character(tabIk$genesInSet))
+for(ii in 1:20) mtext(txts[ii], side=2, at=hlpBar[ii,], las=1, cex=2/3, line=.2)
+text(y=hlpBar, x=rep(0,20), label=as.character(tabIk$geneSet), pos=4, cex=1.1, font=2)
+mtext("c", side=3, at=-9, font=2, cex=3/2)
+
 ```
 
 
@@ -599,25 +490,34 @@ tab <- data.frame(
 
 
 ```{r}
-early24 <- earlyDETest(gamList, knots = c(2, 4), nPoints = 50, global = TRUE, pairwise = TRUE)
+early13 <- earlyDETest(gamList, knots = c(1, 3), nPoints = 50, global = TRUE, pairwise = TRUE)
 library(stageR)
-pScreen <- early24$pvalue
+pScreen <- early13$pvalue
 names(pScreen) <- rownames(countsFiltered)
-pConfirmation <- cbind(early24$pvalue_1vs2, early24$pvalue_1vs3, early24$pvalue_2vs3)
+pConfirmation <- cbind(early13$pvalue_1vs2, early13$pvalue_1vs3, early13$pvalue_2vs3)
 rownames(pConfirmation) <- rownames(countsFiltered)
 colnames(pConfirmation) <- c("1v2", "1v3", "2v3")
 stageRObj <- stageR(pScreen = pScreen, pConfirmation = pConfirmation, pScreenAdjusted = FALSE)
 stageRObj <- stageWiseAdjustment(stageRObj, method = "holm", alpha = 0.05, allowNA = TRUE)
 res <- getResults(stageRObj)
-sigAll24 <- names(which(rowSums(res) == 4))
+sigAll13 <- names(which(rowSums(res) == 4))
 # most of these genes seem to be very relevant.
-# https://www.genecards.org/cgi-bin/carddisp.pl?gene=FREM1
-# Cenpf and Cdca8 are about cell cycle
+oo <- order(early13$waldStat, decreasing=TRUE)
+head(early13[oo,])
 
 library(UpSetR)
 resDf <- as.data.frame(res)
 colnames(resDf) <- c("Global", "Neur. vs. Microv.", "Neur. vs. Sust.", "Microv. vs. Sust.")
 upset(resDf[, -1], order.by = "freq", text.scale = c(1.3, 1.3, 1, 1, 2, 1))
+
+# these are TFs that are DE between clusters within a lineage
+deTFs <- openxlsx::read.xlsx("~/Downloads/mmc4.xlsx")[,1] # supplementary table 3 from fletcher et al. paper
+# which ones are also early DE between lineages?
+sigAll <- rownames(res)[res[,1]==1]
+earlyTFs <- deTFs[deTFs %in% sigAll]
+# gene set enrichment analysis with a custom background?
+
+# + which ones do we find extra?
 
 
 plotSmoothersIk <- function(m, nPoints = 100, ...) {
@@ -653,35 +553,36 @@ plotSmoothersIk <- function(m, nPoints = 100, ...) {
     lines(x = df[, paste0("t", jj)], y = log(yhat + 1), col = cols[jj], lwd = 2)
   }
   # knots
-  abline(v = gamList[[1]]$smooth[[1]]$xp[2], lty = 2, col = "black", lwd = 1.5)
-  abline(v = gamList[[1]]$smooth[[1]]$xp[4], lty = 2, col = "black", lwd = 1.5)
-  legend("topleft", c("Neuronal", "Microvillous", "Sustentacular"),
+  abline(v = gamList[[1]]$smooth[[1]]$xp[1], lty = 2, col = "black", lwd = 1.5)
+  abline(v = gamList[[1]]$smooth[[1]]$xp[3], lty = 2, col = "black", lwd = 1.5)
+  legend("topright", c("Neuronal", "Microvillous", "Sustentacular"),
     col = cols,
     lty = 1, lwd = 2, bty = "n", cex = 4 / 5
   )
 }
+
+# plot earlyTFs
+pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyTFs_OE.pdf", width = 9, height = 7)
+rafalib::mypar(mfrow = c(4, 4), bty = "l")
+for(ii in 1:length(earlyTFs)) plotSmoothersIk(gamList[[earlyTFs[ii]]], main=earlyTFs[ii])
+dev.off()
+
+
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE24SignGenesInAll.png", width = 9, height = 7, units = "in", res = 200)
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE13SignGenesInAll.png", width = 9, height = 7, units = "in", res = 200)
 rafalib::mypar(mfrow = c(3, 3), bty = "l")
 for (ii in 1:9) {
-  plotSmoothersIk(gamList[[sigAll24[ii]]], ylim = c(0, 10), main = sigAll24[ii])
+  plotSmoothersIk(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
 }
 dev.off()
 
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE24SignGenesInAll_allGenes.png", width = 9, height = 7, units = "in", res = 200)
+pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE13SignGenesInAll_allGenes.pdf", width = 9, height = 7)
 rafalib::mypar(mfrow = c(4, 4), bty = "l")
-for (ii in 1:length(sigAll24)) {
-  plotSmoothersIk(gamList[[sigAll24[ii]]], ylim = c(0, 10), main = sigAll24[ii])
+for (ii in 1:length(sigAll13)) {
+  plotSmoothersIk(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
 }
 dev.off()
 
-
-# neuronal vs sus lineage
-sum(p.adjust(early24$pvalue_1vs3, "fdr") <= 0.05, na.rm = TRUE) # 588 genes
-# microvillous vs sus lineage
-sum(p.adjust(early24$pvalue_2vs3, "fdr") <= 0.05, na.rm = TRUE) # 452 genes
-# neuronal vs microvillous lineage
-sum(p.adjust(early24$pvalue_1vs2, "fdr") <= 0.05, na.rm = TRUE) # 258 genes
 ```
 
 # plot for paper v2
