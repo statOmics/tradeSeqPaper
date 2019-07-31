@@ -69,15 +69,15 @@ getWeightsBifurcation <- function(data, crv) {
 
 #### Monocle
 # downloaded from https://github.com/cole-trapnell-lab/monocle-release on June 11, 2019.
-source(
-  "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/differential_expression.R"
-  )
-source(
-  "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/utils.R"
-  )
-source(
-  "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/expr_models.R"
-  )
+# source(
+#   "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/differential_expression.R"
+#   )
+# source(
+#   "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/utils.R"
+#   )
+# source(
+#   "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/expr_models.R"
+#   )
 
 BEAM_kvdb <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
                       reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",

@@ -6,6 +6,7 @@ library(slingshot)
 library(tradeSeq)
 library(microbenchmark)
 library(edgeR)
+library(here)
 library(rafalib)
 library(wesanderson)
 library(BiocParallel)
@@ -50,28 +51,16 @@ normCounts <- round(FQnorm(counts))
 pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
 rd <- pca$x[, 1:3]
 ## cluster
-nClusters <- datasetClusters$nClusters[datasetIter]
-set.seed(5)
-cl <- kmeans(rd, centers = nClusters)$cluster
+cl <- as.factor(gid$group_id)
 rafalib::mypar(mfrow = c(1, 2))
-plot(rd, col = wes_palette("Darjeeling1", 10, type = "continuous")[cl], pch = 16, asp = 1)
-legend("topleft", legend = as.character(1:nClusters),
-       col = wes_palette("Darjeeling1", 10, type = "continuous"), pch = 16, cex = 2 / 3,
-       bty = "n")
 plot(rd, col = brewer.pal(8, "Dark2")[as.numeric(as.factor(gid$group_id))],
      pch = 16, asp = 1)
 legend("topright", paste0("M", 1:length(unique(gid$group_id))), col = 1:4, pch = 16)
-rafalib::mypar(mfrow = c(1, 3))
-plot(rd, col = pal[cl], pch = 16, asp = 1)
-legend("topleft", legend = as.character(1:nClusters), col = pal, pch = 16, cex = 2 / 3,
-       bty = "n")
 plot(rd, col = pal[g], pch = 16, asp = 1)
-plot(rd, col = as.numeric(as.factor(gid$group_id)) + 1, pch = 16, asp = 1)
 
 # lineages
-lin <- getLineages(rd, cl, start.clus = datasetClusters$start[datasetIter],
-                   end.clus = c(datasetClusters$end1[datasetIter],
-                                datasetClusters$end2[datasetIter]))
+lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
+                   end.clus = c(2, 4))
 plot(rd, col = pal[g], pch = 16, asp = 1)
 lines(lin, lwd = 2)
 # curves
@@ -81,6 +70,7 @@ lines(crv, lwd = 2, col = "black")
 
 ## Monocle BEAM analysis ----
 ### Monocle 2 BEAM analysis
+trueWeights <- getWeightsBifurcation(dataset, crv)
 featureInfo <- data.frame(gene_short_name = rownames(counts))
 rownames(featureInfo) <- rownames(counts)
 fd <- new("AnnotatedDataFrame", featureInfo)
@@ -101,16 +91,15 @@ phenoData(cds)$Pseudotime <- truePseudotime
 
 ## tradeSeq  ----
 ### tradeSeq: fit smoothers on truth data
-trueWeights <- getWeightsBifurcation(dataset, crv)
 trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
-gamListTruth <- fitGAM(counts, pseudotime = trueT, cellWeights = trueWeights)
+gamListTruth <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)
 
 endRes <- diffEndTest(gamListTruth)
 patternRes <- patternTest(gamListTruth)
 
 ## Benchmark time ----
-microbenchmark(
-  fitGAM(counts, pseudotime = trueT, cellWeights = trueWeights),
+time_benchmark <- microbenchmark(
+  fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
   BEAM_kvdb(cds, cores = 1),
   times = 10L
 )
