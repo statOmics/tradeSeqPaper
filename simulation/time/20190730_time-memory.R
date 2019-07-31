@@ -92,10 +92,6 @@ phenoData(cds)$Pseudotime <- truePseudotime
 ## tradeSeq  ----
 ### tradeSeq: fit smoothers on truth data
 trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
-gamListTruth <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)
-
-endRes <- diffEndTest(gamListTruth)
-patternRes <- patternTest(gamListTruth)
 
 ## Benchmark time ----
 time_benchmark <- microbenchmark(
@@ -105,5 +101,14 @@ time_benchmark <- microbenchmark(
 )
 
 ## Benchmark memory ----
-profvis(fitGAM(counts, pseudotime = trueT, cellWeights = trueWeights))
-profvis(BEAM_kvdb(cds, cores = 1))
+if (!file.exists(here("simulation", "time", "fitGam-memory.Rprof"))) {
+  profvis(fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
+          prof_output = here("simulation", "time", "fitGam-memory.Rprof"))  
+}
+profvis(prof_input = here("simulation", "time", "fitGam-memory.Rprof"))
+
+if (!file.exists(here("simulation", "time", "BEAM-memory.Rprof"))) {
+  profvis(BEAM_kvdb(cds, cores = 1),
+          prof_output = here("simulation", "time", "BEAM-memory.Rprof"))  
+}
+profvis(prof_input = here("simulation", "time", "BEAM-memory.Rprof"))
