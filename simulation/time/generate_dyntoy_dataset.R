@@ -1,7 +1,6 @@
 library(tidyverse)
 library(dyno)
 library(dyntoy)
-library(patchwork)
 library(here)
 
 set.seed(87657)

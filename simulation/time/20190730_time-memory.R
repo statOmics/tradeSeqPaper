@@ -12,6 +12,7 @@ library(wesanderson)
 library(BiocParallel)
 library(doParallel)
 library(profvis)
+library(ImpulseDE2)
 
 ## Pre-process ----
 NCORES <- 2
@@ -29,7 +30,10 @@ FQnorm <- function(counts) {
   return(norm)
 }
 
+## datasets ----
+
 for (size in c("small", "big")) {
+  ## pre-process ----
   dataset <- readRDS(paste0(here("simulation", "time",
                                  paste0(size, "DyntoyDataset.rds"))))
   counts <- t(dataset$counts)
@@ -93,7 +97,7 @@ for (size in c("small", "big")) {
   ### tradeSeq: fit smoothers on truth data
   trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
   
-  ## edgeR ---
+  ## edgeR ----
   edgeR <- function(){
     clF <- as.factor(cl)
     design <- model.matrix(~clF)
@@ -113,40 +117,90 @@ for (size in c("small", "big")) {
     lrt <- glmLRT(fit, contrast = L)
   }
   
+  ## Impulse DE ----
+  gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
+                      cellWeights = trueWeights)
+  m <- gamList[[1]]
+  branch <- rep(NA, ncol(counts))
+  time <- rep(NA, ncol(counts))
+  branch[m$model$l1 == 1] <- "A"
+  time[m$model$l1 == 1] <- trueT[m$model$l1 == 1, 1]
+  branch[m$model$l2 == 1] <- "B"
+  time[m$model$l2 == 1] <- trueT[m$model$l2 == 1, 2]
+  condition <- ifelse(branch == "A", "control", "case")
+  # ImpulseDE2 cannot handle datasets where every gene contains at least one zero.
+  # since then it errors on the DESeq2 size factor estimation. Since the data is
+  # already quantile normalized, we provide a size factor of 1 as input.
+  sf <- rep(1, ncol(normCounts)) # data is already normalized
+  names(sf) <- colnames(normCounts)
+  # dfAnnotation
+  dfAnn <- data.frame(Sample = colnames(counts), Condition = condition, Time = time)
+  # Even with supplied size factors, it errors because it still attempts to calculate
+  # the size factors for dispersion estimation with DESeq2. Do it manually.
+  dds <- suppressWarnings(DESeqDataSetFromMatrix(
+    countData = round(normCounts),
+    colData = dfAnn,
+    design = ~ Condition + Condition:Time
+  ))
+  dds <- estimateSizeFactors(dds, type = "poscounts")
+  dds <- estimateDispersions(dds)
+  vecDispersionsInv <- mcols(dds)$dispersion
+  vecDispersions <- 1 / vecDispersionsInv
+  names(vecDispersions) <- rownames(dds)
+  
   ## Benchmark time ----
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
     BEAM_kvdb(cds, cores = 1),
     edgeR,
-    times = 1L
+    runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
+                  boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
+                  vecDispersionsExternal = vecDispersions, scaNProc = 2),
+    times = 10L
   )
-  save
+  write.table(x = time_benchmark,
+              file = here("simulation", "time",
+                          paste0(size, "-time-benchmark.txt")))
   
   ## Benchmark memory ----
   ### tradeSeq
-  if (!file.exists(here("simulation", "time", "fitGam-memory.Rprof"))) {
+  if (!file.exists(here("simulation", "time",
+                        paste0(size, "-fitGam-memory.Rprof")))) {
     profvis(fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
             prof_output = here("simulation", "time",
                                paste0(size, "-fitGam-memory.Rprof")))
   }
-  profvis(prof_input = here("simulation", "time",
-                            paste0(size, "-fitGam-memory.Rprof")))
+  # profvis(prof_input = here("simulation", "time",
+  #                           paste0(size, "-fitGam-memory.Rprof")))
   
   ### BEAM
-  if (!file.exists(here("simulation", "time", "BEAM-memory.Rprof"))) {
+  if (!file.exists(here("simulation", "time",
+                        paste0(size, "-BEAM-memory.Rprof")))) {
     profvis(BEAM_kvdb(cds, cores = 1),
             prof_output = here("simulation", "time",
                                paste0(size, "-BEAM-memory.Rprof")))
   }
-  profvis(prof_input = here("simulation", "time",
-                            paste0(size, "-BEAM-memory.Rprof")))
+  # profvis(prof_input = here("simulation", "time",
+  #                           paste0(size, "-BEAM-memory.Rprof")))
   
   ### edgeR
-  if (!file.exists(here("simulation", "time", "edgeR-memory.Rprof"))) {
-    profvis(BEAM_kvdb(cds, cores = 1),
+  if (!file.exists(here("simulation", "time",
+                        paste0(size, "-edgeR-memory.Rprof")))) {
+    profvis(edgeR(),
             prof_output = here("simulation", "time",
                                paste0(size, "-edgeR-memory.Rprof")))
   }
-  profvis(prof_input = here("simulation", "time",
-                            paste0(size, "-edgeR-memory.Rprof")))
+  # profvis(prof_input = here("simulation", "time",
+  #                           paste0(size, "-edgeR-memory.Rprof")))
+  ### ImpusleDE
+  if (!file.exists(here("simulation", "time",
+                        paste0(size, "-ImpusleDE-memory.Rprof")))) {
+    profvis(runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
+                          boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
+                          vecDispersionsExternal = vecDispersions, scaNProc = 2),
+            prof_output = here("simulation", "time",
+                               paste0(size, "-ImpusleDE-memory.Rprof")))
+  }
+  # profvis(prof_input = here("simulation", "time",
+  #                           paste0(size, "-ImpusleDE-memory.Rprof")))
 }
