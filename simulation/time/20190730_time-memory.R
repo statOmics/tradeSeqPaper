@@ -82,7 +82,7 @@ for (size in c("small", "big")) {
                         expressionFamily = negbinomial.size())
   cds <- estimateSizeFactors(cds)
   cds <- estimateDispersions(cds)
-  cds <- reduceDimension(cds)
+  cds <- reduceDimension(cds, reduction_method = "ICA")
   cds <- orderCells(cds)
   set.seed(11)
   branch <- rep(NA, ncol(counts))
@@ -152,7 +152,7 @@ for (size in c("small", "big")) {
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
     BEAM_kvdb(cds, cores = 1),
-    edgeR,
+    edgeR(),
     runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
                   boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
                   vecDispersionsExternal = vecDispersions, scaNProc = 2),
