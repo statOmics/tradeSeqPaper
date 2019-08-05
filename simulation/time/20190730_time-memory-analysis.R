@@ -26,21 +26,21 @@ for (size in c("small", "big")) {
   
   ## Benchmark memory ----
   ### tradeSeq
-  print(profvis(prof_input = here::here("simulation", "time",
-                            paste0(size, "-fitGam-memory.Rprof"))))
-  ### For small dataset: -28559.2 / 28902.8 (MB)
+  summaryRprof(filename = here::here("simulation", "time",
+                                     paste0(size, "-fitGam-memory.Rprof")),
+               memory = "both", lines = "show")$by.line[, "mem.total"]
   
   ### BEAM
-  profvis(prof_input = here::here("simulation", "time",
-                            paste0(size, "-BEAM-memory.Rprof")))
-  ### For small dataset: -3689.8 / 3952.0 (MB)
-  
+  summaryRprof(filename = here::here("simulation", "time",
+                                     paste0(size, "-BEAM-memory.Rprof")),
+               memory = "both", lines = "show")$by.line[, "mem.total"]
   ### edgeR
-  profvis(prof_input = here::here("simulation", "time",
-                            paste0(size, "-edgeR-memory.Rprof")))
-  ### For small dataset: -635.4	/ 785.7 (MB)
+  summaryRprof(filename = here::here("simulation", "time",
+                                     paste0(size, "-edgeR-memory.Rprof")),
+               memory = "both", lines = "show")$by.line[, "mem.total"]
   
   ### ImpusleDE
-  profvis(prof_input = here::here("simulation", "time",
-                            paste0(size, "-ImpusleDE-memory.Rprof")))
+  summaryRprof(filename = here::here("simulation", "time",
+                                     paste0(size, "-ImpulseDE-memory.Rprof")),
+               memory = "both", lines = "show", chunksize = 10000)
 }
