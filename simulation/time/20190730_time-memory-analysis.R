@@ -15,7 +15,7 @@ for (size in c("small", "big")) {
                             str_detect(expr, "fitGAM") ~ "tradeSeq",
                             str_detect(expr, "BEAM") ~ "BEAM",
                             str_detect(expr, "ImpulseDE2") ~ "ImpulseDE2"),
-           time = duration(time / 60^5, units = "seconds")) %>%
+           time = duration(round(time / 60^5,2), units = "seconds")) %>%
     group_by(expr) %>%
     summarise(min = duration(min(time), units = "seconds"),
               firstQuartile = quantile(time, 0.25),
@@ -28,7 +28,7 @@ for (size in c("small", "big")) {
   ### tradeSeq
   print(profvis(prof_input = here::here("simulation", "time",
                             paste0(size, "-fitGam-memory.Rprof"))))
-  ### For small dataset: -3689.8 / 3952.0 (MB)
+  ### For small dataset: -28559.2 / 28902.8 (MB)
   
   ### BEAM
   profvis(prof_input = here::here("simulation", "time",
