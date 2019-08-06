@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import sys
+sys.path.append("/accounts/campus/hector.rouxdebezieux/R/x86_64-pc-linux-gnu-library/3.5/GPfates/venv/lib/python3.7/site-packages")
 from GPfates import GPfates
 import pickle as pickle
 

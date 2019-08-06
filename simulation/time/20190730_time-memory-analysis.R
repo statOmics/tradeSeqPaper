@@ -29,6 +29,4 @@ for (size in 2:5) {
 time_benchmarks <- do.call("rbind", time_benchmarks) %>% as.data.frame()
 mem_benchmarks <- do.call("rbind", mem_benchmarks) %>% as.data.frame()
 
-gg
-
 
