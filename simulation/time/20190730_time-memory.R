@@ -34,7 +34,7 @@ FQnorm <- function(counts) {
 
 for (size in c("small", "big")) {
   ## pre-process ----
-  dataset <- readRDS(paste0(here("simulation", "time",
+  dataset <- readRDS(paste0(here::here("simulation", "time",
                                  paste0(size, "DyntoyDataset.rds"))))
   counts <- t(dataset$counts)
   
@@ -148,6 +148,15 @@ for (size in c("small", "big")) {
   vecDispersions <- 1 / vecDispersionsInv
   names(vecDispersions) <- rownames(dds)
   
+  ## GPfates ----
+  logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
+  sampleInfo <- data.frame(global_pseudotime=truePseudotime)
+  rownames(sampleInfo) <- colnames(counts)
+  write.table(logCpm, file="./timeBenchLogCpm.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
+  write.table(sampleInfo, file="./timeBenchSampleInfo.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
+  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
+  
+  
   ## Benchmark time ----
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
@@ -156,51 +165,61 @@ for (size in c("small", "big")) {
     runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
                   boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
                   vecDispersionsExternal = vecDispersions, scaNProc = 2),
+    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py"),
     times = 10L
   )
   write.table(x = time_benchmark,
-              file = here("simulation", "time",
+              file = here::here("simulation", "time",
                           paste0(size, "-time-benchmark.txt")))
   
   ## Benchmark memory ----
   ### tradeSeq
-  if (!file.exists(here("simulation", "time",
+  if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-fitGam-memory.Rprof")))) {
     profvis(fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
-            prof_output = here("simulation", "time",
+            prof_output = here::here("simulation", "time",
                                paste0(size, "-fitGam-memory.Rprof")))
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-fitGam-memory.Rprof")))
   
   ### BEAM
-  if (!file.exists(here("simulation", "time",
+  if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-BEAM-memory.Rprof")))) {
     profvis(BEAM_kvdb(cds, cores = 1),
-            prof_output = here("simulation", "time",
+            prof_output = here::here("simulation", "time",
                                paste0(size, "-BEAM-memory.Rprof")))
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-BEAM-memory.Rprof")))
   
   ### edgeR
-  if (!file.exists(here("simulation", "time",
+  if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-edgeR-memory.Rprof")))) {
     profvis(edgeR(),
-            prof_output = here("simulation", "time",
+            prof_output = here::here("simulation", "time",
                                paste0(size, "-edgeR-memory.Rprof")))
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-edgeR-memory.Rprof")))
   ### ImpusleDE
-  if (!file.exists(here("simulation", "time",
+  if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-ImpusleDE-memory.Rprof")))) {
     profvis(runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
                           boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
                           vecDispersionsExternal = vecDispersions, scaNProc = 2),
-            prof_output = here("simulation", "time",
+            prof_output = here::here("simulation", "time",
                                paste0(size, "-ImpusleDE-memory.Rprof")))
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-ImpusleDE-memory.Rprof")))
+  
+  ### GPfates
+  if (!file.exists(here::here("simulation", "time",
+                        paste0(size, "-GPfates-memory.txt")))) {
+    memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+                            intern=TRUE)
+  }
+  # profvis(prof_input = here("simulation", "time",
+  #                           paste0(size, "-GPfates-memory.Rprof")))
 }
