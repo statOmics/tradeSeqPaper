@@ -226,6 +226,4 @@ for (size in c("small", "big")) {
     write.table(maxUsage, file=paste0(size, "-GPfates-memory.txt"),
                 col.names=FALSE, quote=FALSE, row.names=FALSE)
   }
-  # profvis(prof_input = here("simulation", "time",
-  #                           paste0(size, "-GPfates-memory.Rprof")))
 }
