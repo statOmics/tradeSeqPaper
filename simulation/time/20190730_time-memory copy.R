@@ -1,0 +1,190 @@
+library(monocle)
+library(DESeq2)
+library(RColorBrewer)
+library(mgcv)
+library(slingshot)
+library(tradeSeq)
+library(microbenchmark)
+library(edgeR)
+library(here)
+library(rafalib)
+library(dyno)
+library(dyntoy)
+library(tidyverse)
+library(wesanderson)
+library(BiocParallel)
+library(doParallel)
+
+## Pre-process ----
+NCORES <- 2
+palette(wes_palette("Darjeeling1", 10, type = "continuous"))
+source(here::here("simulation", "time", "20190611_helper.R"))
+set.seed(87657)
+
+FQnorm <- function(counts) {
+  rk <- apply(counts, 2, rank, ties.method = "min")
+  counts.sort <- apply(counts, 2, sort)
+  refdist <- apply(counts.sort, 1, median)
+  norm <- apply(rk, 2, function(r) {
+    refdist[r]
+  })
+  rownames(norm) <- rownames(counts)
+  return(norm)
+}
+
+## datasets ----
+
+for (size in 2:5) {
+  ## Generate dataset ----
+  dataset <- generate_dataset(
+    model = model_bifurcating(),
+    num_cells = 10^size,
+    num_features = 5000,
+    differentially_expressed_rate = .2
+  )
+  ## pre-process ----
+  counts <- t(dataset$counts)
+  
+  # get milestones
+  gid <- dataset$prior_information$groups_id
+  gid <- gid[match(colnames(counts), gid$cell_id), ]
+  
+  pal <- wes_palette("Zissou1", 12, type = "continuous")
+  truePseudotime <- dataset$prior_information$timecourse_continuous
+  g <- Hmisc::cut2(truePseudotime, g = 12)
+  
+  # quantile normalization
+  normCounts <- round(FQnorm(counts))
+  
+  
+  ## Running slingshot ----
+  ## dim red
+  pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
+  rd <- pca$x[, 1:4]
+  ## cluster
+  cl <- as.factor(gid$group_id)
+  
+  # lineages
+  lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
+                     end.clus = c(2, 4))
+  # curves
+  crv <- getCurves(lin)
+  
+  ## Monocle BEAM analysis ----
+  ### Monocle 2 BEAM analysis
+  trueWeights <- getWeightsBifurcation(dataset, crv)
+  featureInfo <- data.frame(gene_short_name = rownames(counts))
+  rownames(featureInfo) <- rownames(counts)
+  fd <- new("AnnotatedDataFrame", featureInfo)
+  cds <- newCellDataSet(cellData = normCounts, featureData = fd, 
+                        expressionFamily = negbinomial.size())
+  cds <- estimateSizeFactors(cds)
+  cds <- estimateDispersions(cds)
+  cds <- reduceDimension(cds, reduction_method = "ICA")
+  cds <- orderCells(cds)
+  set.seed(11)
+  branch <- rep(NA, ncol(counts))
+  branch[trueWeights[, 1] == 1] <- "A"
+  branch[trueWeights[, 2] == 1] <- "B"
+  branch[is.na(branch)] <- c("A", "B")[sample(1:2, size = sum(is.na(branch)), replace = TRUE)]
+  phenoData(cds)$Branch <- as.factor(branch)
+  phenoData(cds)$original_cell_id <- colnames(counts)
+  phenoData(cds)$Pseudotime <- truePseudotime
+  
+  ## tradeSeq  ----
+  ### tradeSeq: fit smoothers on truth data
+  trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
+  
+  ## edgeR ----
+  edgeR <- function(){
+    clF <- as.factor(cl)
+    design <- model.matrix(~clF)
+    d <- DGEList(counts)
+    d <- calcNormFactors(d)
+    d <- estimateDisp(d, design)
+    fit <- glmFit(d, design)
+    L <- matrix(0, nrow = ncol(fit$coefficients), ncol = 1)
+    rownames(L) <- colnames(fit$coefficients)
+    endClusters <- c(2, 4)
+    if (1 %in% endClusters) {
+      not1Cluster <- endClusters[!endClusters == 1]
+      L[not1Cluster,1] <- 1
+    } else {
+      L[endClusters,1] <- c(1,-1)
+    }
+    lrt <- glmLRT(fit, contrast = L)
+  }
+  
+  ## GPFates ----
+  logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
+  sampleInfo <- data.frame(global_pseudotime = truePseudotime)
+  rownames(sampleInfo) <- colnames(counts)
+  write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
+  
+  ## Benchmark time ----
+  time_benchmark <- microbenchmark(
+    fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
+    BEAM_kvdb(cds, cores = 1),
+    edgeR(),
+    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py"),
+    times = 10L
+  )
+  write.table(x = time_benchmark,
+              file = here("simulation", "time",
+                          paste0(size, "-time-benchmark.txt")))
+  
+  ## Benchmark memory ----
+  mem <- rep(0, 4)
+  names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
+  ### tradeSeq
+  Rprofmem(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
+                 verbose = FALSE)
+  Rprofmem(filename = 'NULL')
+  mem["tradeSeq"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
+  
+  ### BEAM
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- BEAM_kvdb(cds, cores = 1)
+  Rprof(filename = 'NULL')
+  mem["BEAM"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
+  
+  ### edgeR
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- edgeR()
+  Rprof(filename = 'NULL')
+  mem["edgeR"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
+  
+  ### GPfates
+  memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+                          intern = TRUE)
+  mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
+  mem1 <- str_subset(mem1, "MiB")
+  mem["GPFates"] <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
+  
+  ### All together
+  write.table(x = mem,file = here("simulation", "time",
+                                  paste0(size, "-mem-benchmark.txt")))
+}
+
+file.remove(here::here("simulation", "time","Rprof.out"))
+file.remove(here::here("simulation", "time","Rprof.out"))
+file.remove("timeBenchLogCpm.txt")
+file.remove("timeBenchSampleInfo.txt")
+file.remove("m.pkl")

@@ -12,7 +12,6 @@ library(wesanderson)
 library(BiocParallel)
 library(doParallel)
 library(profvis)
-library(ImpulseDE2)
 library(stringr)
 
 ## Pre-process ----
@@ -118,44 +117,15 @@ for (size in c("small", "big")) {
     lrt <- glmLRT(fit, contrast = L)
   }
 
-  ## Impulse DE ----
-  gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
-                      cellWeights = trueWeights)
-  m <- gamList[[1]]
-  branch <- rep(NA, ncol(counts))
-  time <- rep(NA, ncol(counts))
-  branch[m$model$l1 == 1] <- "A"
-  time[m$model$l1 == 1] <- trueT[m$model$l1 == 1, 1]
-  branch[m$model$l2 == 1] <- "B"
-  time[m$model$l2 == 1] <- trueT[m$model$l2 == 1, 2]
-  condition <- ifelse(branch == "A", "control", "case")
-  # ImpulseDE2 cannot handle datasets where every gene contains at least one zero.
-  # since then it errors on the DESeq2 size factor estimation. Since the data is
-  # already quantile normalized, we provide a size factor of 1 as input.
-  sf <- rep(1, ncol(normCounts)) # data is already normalized
-  names(sf) <- colnames(normCounts)
-  # dfAnnotation
-  dfAnn <- data.frame(Sample = colnames(counts), Condition = condition, Time = time)
-  # Even with supplied size factors, it errors because it still attempts to calculate
-  # the size factors for dispersion estimation with DESeq2. Do it manually.
-  dds <- suppressWarnings(DESeqDataSetFromMatrix(
-    countData = round(normCounts),
-    colData = dfAnn,
-    design = ~ Condition + Condition:Time
-  ))
-  dds <- estimateSizeFactors(dds, type = "poscounts")
-  dds <- estimateDispersions(dds)
-  vecDispersionsInv <- mcols(dds)$dispersion
-  vecDispersions <- 1 / vecDispersionsInv
-  names(vecDispersions) <- rownames(dds)
-
   ## GPfates ----
-  logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
-  sampleInfo <- data.frame(global_pseudotime=truePseudotime)
+  logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
+  sampleInfo <- data.frame(global_pseudotime = truePseudotime)
   rownames(sampleInfo) <- colnames(counts)
-  write.table(logCpm, file="./timeBenchLogCpm.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
-  write.table(sampleInfo, file="./timeBenchSampleInfo.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
-  system("python3 ./20190806_preprocessGPfatesTimeBenchmark.py")
+  write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
 
 
   ## Benchmark time ----
@@ -216,14 +186,12 @@ for (size in c("small", "big")) {
   #                           paste0(size, "-ImpusleDE-memory.Rprof")))
 
   ### GPfates
-  if (!file.exists(here::here("simulation", "time",
-                        paste0(size, "-GPfates-memory.txt")))) {
-    memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-                            intern=TRUE)
-    mem1 <- sapply(memGPfatesAll, strsplit, split="\t")
-    mem1 <- str_subset(mem1, "MiB")
-    maxUsage <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
-    write.table(maxUsage, file=paste0(size, "-GPfates-memory.txt"),
-                col.names=FALSE, quote=FALSE, row.names=FALSE)
+  memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+                          intern = TRUE)
+  mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
+  mem1 <- str_subset(mem1, "MiB")
+  maxUsage <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
+  write.table(maxUsage, file=paste0(size, "-GPfates-memory.txt"),
+              col.names=FALSE, quote=FALSE, row.names=FALSE)
   }
 }
