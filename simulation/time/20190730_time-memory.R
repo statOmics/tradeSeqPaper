@@ -38,19 +38,19 @@ for (size in c("small", "big")) {
   dataset <- readRDS(paste0(here::here("simulation", "time",
                                  paste0(size, "DyntoyDataset.rds"))))
   counts <- t(dataset$counts)
-  
+
   # get milestones
   gid <- dataset$prior_information$groups_id
   gid <- gid[match(colnames(counts), gid$cell_id), ]
-  
+
   pal <- wes_palette("Zissou1", 12, type = "continuous")
   truePseudotime <- dataset$prior_information$timecourse_continuous
   g <- Hmisc::cut2(truePseudotime, g = 12)
-  
+
   # quantile normalization
   normCounts <- round(FQnorm(counts))
-  
-  
+
+
   ## Running slingshot ----
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
@@ -62,7 +62,7 @@ for (size in c("small", "big")) {
        pch = 16, asp = 1)
   legend("topright", paste0("M", 1:length(unique(gid$group_id))), col = 1:4, pch = 16)
   plot(rd, col = pal[g], pch = 16, asp = 1)
-  
+
   # lineages
   lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
                      end.clus = c(2, 4))
@@ -72,14 +72,14 @@ for (size in c("small", "big")) {
   crv <- getCurves(lin)
   plot(rd, col = pal[g], pch = 16, asp = 1)
   lines(crv, lwd = 2, col = "black")
-  
+
   ## Monocle BEAM analysis ----
   ### Monocle 2 BEAM analysis
   trueWeights <- getWeightsBifurcation(dataset, crv)
   featureInfo <- data.frame(gene_short_name = rownames(counts))
   rownames(featureInfo) <- rownames(counts)
   fd <- new("AnnotatedDataFrame", featureInfo)
-  cds <- newCellDataSet(cellData = normCounts, featureData = fd, 
+  cds <- newCellDataSet(cellData = normCounts, featureData = fd,
                         expressionFamily = negbinomial.size())
   cds <- estimateSizeFactors(cds)
   cds <- estimateDispersions(cds)
@@ -93,11 +93,11 @@ for (size in c("small", "big")) {
   phenoData(cds)$Branch <- as.factor(branch)
   phenoData(cds)$original_cell_id <- colnames(counts)
   phenoData(cds)$Pseudotime <- truePseudotime
-  
+
   ## tradeSeq  ----
   ### tradeSeq: fit smoothers on truth data
   trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
-  
+
   ## edgeR ----
   edgeR <- function(){
     clF <- as.factor(cl)
@@ -117,7 +117,7 @@ for (size in c("small", "big")) {
     }
     lrt <- glmLRT(fit, contrast = L)
   }
-  
+
   ## Impulse DE ----
   gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
                       cellWeights = trueWeights)
@@ -148,16 +148,16 @@ for (size in c("small", "big")) {
   vecDispersionsInv <- mcols(dds)$dispersion
   vecDispersions <- 1 / vecDispersionsInv
   names(vecDispersions) <- rownames(dds)
-  
+
   ## GPfates ----
   logCpm <- edgeR::cpm(normCounts, prior.count=.125, log=TRUE)
   sampleInfo <- data.frame(global_pseudotime=truePseudotime)
   rownames(sampleInfo) <- colnames(counts)
   write.table(logCpm, file="./timeBenchLogCpm.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
   write.table(sampleInfo, file="./timeBenchSampleInfo.txt", row.names=TRUE, col.names=TRUE, quote=FALSE)
-  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
-  
-  
+  system("python3 ./20190806_preprocessGPfatesTimeBenchmark.py")
+
+
   ## Benchmark time ----
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
@@ -172,7 +172,7 @@ for (size in c("small", "big")) {
   write.table(x = time_benchmark,
               file = here::here("simulation", "time",
                           paste0(size, "-time-benchmark.txt")))
-  
+
   ## Benchmark memory ----
   ### tradeSeq
   if (!file.exists(here::here("simulation", "time",
@@ -183,7 +183,7 @@ for (size in c("small", "big")) {
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-fitGam-memory.Rprof")))
-  
+
   ### BEAM
   if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-BEAM-memory.Rprof")))) {
@@ -193,7 +193,7 @@ for (size in c("small", "big")) {
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-BEAM-memory.Rprof")))
-  
+
   ### edgeR
   if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-edgeR-memory.Rprof")))) {
@@ -214,7 +214,7 @@ for (size in c("small", "big")) {
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-ImpusleDE-memory.Rprof")))
-  
+
   ### GPfates
   if (!file.exists(here::here("simulation", "time",
                         paste0(size, "-GPfates-memory.txt")))) {
