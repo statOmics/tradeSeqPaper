@@ -28,19 +28,24 @@ for (size in c("small", "big")) {
   ### tradeSeq
   summaryRprof(filename = here::here("simulation", "time",
                                      paste0(size, "-fitGam-memory.Rprof")),
-               memory = "both", lines = "show")$by.line[, "mem.total"]
+               memory = "both", lines = "show")$by.line[, "mem.total"] %>%
+    print()
   
   ### BEAM
   summaryRprof(filename = here::here("simulation", "time",
                                      paste0(size, "-BEAM-memory.Rprof")),
-               memory = "both", lines = "show")$by.line[, "mem.total"]
+               memory = "both", lines = "show")$by.line[, "mem.total"] %>%
+    print()
+  
   ### edgeR
   summaryRprof(filename = here::here("simulation", "time",
                                      paste0(size, "-edgeR-memory.Rprof")),
-               memory = "both", lines = "show")$by.line[, "mem.total"]
+               memory = "both", lines = "show")$by.line[, "mem.total"] %>%
+    print()
   
   ### ImpusleDE
   summaryRprof(filename = here::here("simulation", "time",
                                      paste0(size, "-ImpulseDE-memory.Rprof")),
-               memory = "both", lines = "show", chunksize = 10000)
+               memory = "both", lines = "show", chunksize = 10000) %>%
+    print()
 }
