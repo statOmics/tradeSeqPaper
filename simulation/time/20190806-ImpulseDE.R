@@ -16,6 +16,7 @@ library(tidyverse)
 library(dyno)
 library(dyntoy)
 library(here)
+source(here::here("simulation", "time", "20190611_helper.R"))
 
 set.seed(87657)
 dataset <- generate_dataset(
@@ -63,6 +64,7 @@ lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
                    end.clus = c(2, 4))
 # curves
 crv <- getCurves(lin)
+trueWeights <- getWeightsBifurcation(dataset, crv)
 trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
 
 gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
