@@ -17,7 +17,7 @@ library(ImpulseDE2)
 ## Pre-process ----
 NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type = "continuous"))
-source(here("simulation", "time", "20190611_helper.R"))
+source(here::here("simulation", "time", "20190611_helper.R"))
 
 FQnorm <- function(counts) {
   rk <- apply(counts, 2, rank, ties.method = "min")

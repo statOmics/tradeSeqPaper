@@ -56,9 +56,9 @@ weights <- computeObservationalWeights(zinb_c, countsFiltered)
 ######## look at IC to get K
 library(tradeSeq)
 k <- 3:30
-infMat <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=250, ncores=2)
+infMat <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=1000, ncores=2)
 
-infMat2 <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=250, ncores=2,
+infMat2 <- evaluateK(counts=countsFiltered, pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights, k=k, nGenes=1000, ncores=2,
                      seed=1)
 
 
