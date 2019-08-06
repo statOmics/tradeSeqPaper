@@ -13,6 +13,7 @@ library(BiocParallel)
 library(doParallel)
 library(profvis)
 library(ImpulseDE2)
+library(stringr)
 
 ## Pre-process ----
 NCORES <- 2
@@ -219,6 +220,11 @@ for (size in c("small", "big")) {
                         paste0(size, "-GPfates-memory.txt")))) {
     memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
                             intern=TRUE)
+    mem1 <- sapply(memGPfatesAll, strsplit, split="\t")
+    mem1 <- str_subset(mem1, "MiB")
+    maxUsage <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
+    write.table(maxUsage, file=paste0(size, "-GPfates-memory.txt"),
+                col.names=FALSE, quote=FALSE, row.names=FALSE)
   }
   # profvis(prof_input = here("simulation", "time",
   #                           paste0(size, "-GPfates-memory.Rprof")))
