@@ -37,8 +37,6 @@ FQnorm <- function(counts) {
 }
 
 ## pre-process ----
-dataset <- readRDS(paste0(here("simulation", "time",
-                               paste0(size, "DyntoyDataset.rds"))))
 counts <- t(dataset$counts)
 
 # get milestones

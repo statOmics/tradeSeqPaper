@@ -8,16 +8,18 @@ library(microbenchmark)
 library(edgeR)
 library(here)
 library(rafalib)
+library(dyno)
+library(dyntoy)
+library(tidyverse)
 library(wesanderson)
 library(BiocParallel)
 library(doParallel)
-library(profvis)
-library(stringr)
 
 ## Pre-process ----
 NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type = "continuous"))
 source(here::here("simulation", "time", "20190611_helper.R"))
+set.seed(87657)
 
 FQnorm <- function(counts) {
   rk <- apply(counts, 2, rank, ties.method = "min")
@@ -32,10 +34,15 @@ FQnorm <- function(counts) {
 
 ## datasets ----
 
-for (size in c("small", "big")) {
+for (size in 2:5) {
+  ## Generate dataset ----
+  dataset <- generate_dataset(
+    model = model_bifurcating(),
+    num_cells = 10^size,
+    num_features = 5000,
+    differentially_expressed_rate = .2
+  )
   ## pre-process ----
-  dataset <- readRDS(paste0(here::here("simulation", "time",
-                                 paste0(size, "DyntoyDataset.rds"))))
   counts <- t(dataset$counts)
   
   # get milestones
@@ -53,24 +60,15 @@ for (size in c("small", "big")) {
   ## Running slingshot ----
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
-  rd <- pca$x[, 1:3]
+  rd <- pca$x[, 1:4]
   ## cluster
   cl <- as.factor(gid$group_id)
-  rafalib::mypar(mfrow = c(1, 2))
-  plot(rd, col = brewer.pal(8, "Dark2")[as.numeric(as.factor(gid$group_id))],
-       pch = 16, asp = 1)
-  legend("topright", paste0("M", 1:length(unique(gid$group_id))), col = 1:4, pch = 16)
-  plot(rd, col = pal[g], pch = 16, asp = 1)
   
   # lineages
   lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
                      end.clus = c(2, 4))
-  plot(rd, col = pal[g], pch = 16, asp = 1)
-  lines(lin, lwd = 2)
   # curves
   crv <- getCurves(lin)
-  plot(rd, col = pal[g], pch = 16, asp = 1)
-  lines(crv, lwd = 2, col = "black")
   
   ## Monocle BEAM analysis ----
   ### Monocle 2 BEAM analysis
@@ -117,7 +115,7 @@ for (size in c("small", "big")) {
     lrt <- glmLRT(fit, contrast = L)
   }
   
-  ## GPfates ----
+  ## GPFates ----
   logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
   sampleInfo <- data.frame(global_pseudotime = truePseudotime)
   rownames(sampleInfo) <- colnames(counts)
@@ -127,71 +125,66 @@ for (size in c("small", "big")) {
               col.names = TRUE, quote = FALSE)
   system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
   
-  
   ## Benchmark time ----
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
     BEAM_kvdb(cds, cores = 1),
     edgeR(),
-    runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
-                  boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
-                  vecDispersionsExternal = vecDispersions, scaNProc = 2),
     system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py"),
     times = 10L
   )
   write.table(x = time_benchmark,
-              file = here::here("simulation", "time",
+              file = here("simulation", "time",
                           paste0(size, "-time-benchmark.txt")))
   
   ## Benchmark memory ----
+  mem <- rep(0, 4)
+  names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
   ### tradeSeq
-  if (!file.exists(here::here("simulation", "time",
-                        paste0(size, "-fitGam-memory.Rprof")))) {
-    profvis(fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
-            prof_output = here::here("simulation", "time",
-                               paste0(size, "-fitGam-memory.Rprof")))
-  }
-  # profvis(prof_input = here("simulation", "time",
-  #                           paste0(size, "-fitGam-memory.Rprof")))
+  Rprofmem(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
+                 verbose = FALSE)
+  Rprofmem(filename = 'NULL')
+  mem["tradeSeq"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
   
   ### BEAM
-  if (!file.exists(here::here("simulation", "time",
-                        paste0(size, "-BEAM-memory.Rprof")))) {
-    profvis(BEAM_kvdb(cds, cores = 1),
-            prof_output = here::here("simulation", "time",
-                               paste0(size, "-BEAM-memory.Rprof")))
-  }
-  # profvis(prof_input = here("simulation", "time",
-  #                           paste0(size, "-BEAM-memory.Rprof")))
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- BEAM_kvdb(cds, cores = 1)
+  Rprof(filename = 'NULL')
+  mem["BEAM"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
   
   ### edgeR
-  if (!file.exists(here::here("simulation", "time",
-                        paste0(size, "-edgeR-memory.Rprof")))) {
-    profvis(edgeR(),
-            prof_output = here::here("simulation", "time",
-                               paste0(size, "-edgeR-memory.Rprof")))
-  }
-  # profvis(prof_input = here("simulation", "time",
-  #                           paste0(size, "-edgeR-memory.Rprof")))
-  ### ImpusleDE
-  if (!file.exists(here::here("simulation", "time",
-                        paste0(size, "-ImpusleDE-memory.Rprof")))) {
-    profvis(runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
-                          boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
-                          vecDispersionsExternal = vecDispersions, scaNProc = 2),
-            prof_output = here::here("simulation", "time",
-                               paste0(size, "-ImpusleDE-memory.Rprof")))
-  }
-  # profvis(prof_input = here("simulation", "time",
-  #                           paste0(size, "-ImpusleDE-memory.Rprof")))
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- edgeR()
+  Rprof(filename = 'NULL')
+  mem["edgeR"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max()
   
   ### GPfates
   memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
                           intern = TRUE)
   mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
   mem1 <- str_subset(mem1, "MiB")
-  maxUsage <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
-  write.table(maxUsage, file=paste0(size, "-GPfates-memory.txt"),
-              col.names=FALSE, quote=FALSE, row.names=FALSE)
-  }
+  mem["GPFates"] <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
+  
+  ### All together
+  write.table(x = mem,file = here("simulation", "time",
+                                  paste0(size, "-mem-benchmark.txt")))
 }
+
+file.remove(here::here("simulation", "time","Rprof.out"))
+file.remove(here::here("simulation", "time","Rprof.out"))
+file.remove("timeBenchLogCpm.txt")
+file.remove("timeBenchSampleInfo.txt")
+file.remove("m.pkl")
