@@ -123,14 +123,16 @@ for (size in 2:5) {
               col.names = TRUE, quote = FALSE)
   write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
               col.names = TRUE, quote = FALSE)
-  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py")
+  suppressMessages(system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py"))
   
   ## Benchmark time ----
+  print("benchmark")
   time_benchmark <- microbenchmark(
-    fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
-    BEAM_kvdb(cds, cores = 1),
-    edgeR(),
-    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py"),
+    suppressWarnings(
+      fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)),
+    suppressWarnings(BEAM_kvdb(cds, cores = 1)),
+    suppressWarnings(edgeR()),
+    suppressMessages(system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py")),
     times = 10L
   )
   write.table(x = time_benchmark,
@@ -140,7 +142,9 @@ for (size in 2:5) {
   ## Benchmark memory ----
   mem <- rep(0, 4)
   names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
+  
   ### tradeSeq
+  print("tradeSeq memory")
   Rprofmem(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
@@ -152,6 +156,7 @@ for (size in 2:5) {
     max()
   
   ### BEAM
+  print("BEAM memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- BEAM_kvdb(cds, cores = 1)
@@ -162,6 +167,7 @@ for (size in 2:5) {
     max()
   
   ### edgeR
+  print("edgeR memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- edgeR()
@@ -172,8 +178,10 @@ for (size in 2:5) {
     max()
   
   ### GPfates
-  memGPfatesAll <- system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-                          intern = TRUE)
+  print("GPFates memory")
+  memGPfatesAll <- suppressMessages(
+    system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+           intern = TRUE))
   mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
   mem1 <- str_subset(mem1, "MiB")
   mem["GPFates"] <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
