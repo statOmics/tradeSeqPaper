@@ -123,7 +123,8 @@ for (size in 2:5) {
               col.names = TRUE, quote = FALSE)
   write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
               col.names = TRUE, quote = FALSE)
-  suppressMessages(system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py"))
+  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
+         ignore.stdout = TRUE)
   
   ## Benchmark time ----
   print("benchmark")
@@ -132,7 +133,8 @@ for (size in 2:5) {
       fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)),
     suppressWarnings(BEAM_kvdb(cds, cores = 1)),
     suppressWarnings(edgeR()),
-    suppressMessages(system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py")),
+    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
+      ignore.stdout = TRUE),
     times = 10L
   )
   write.table(x = time_benchmark,
@@ -145,11 +147,11 @@ for (size in 2:5) {
   
   ### tradeSeq
   print("tradeSeq memory")
-  Rprofmem(filename = here::here("simulation", "time","Rprof.out"),
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
                  verbose = FALSE)
-  Rprofmem(filename = 'NULL')
+  Rprof(filename = 'NULL')
   mem["tradeSeq"] <- summaryRprof(
     filename = here::here("simulation", "time", "Rprof.out"),
     memory = "both")$by.total[, "mem.total"] %>% 
@@ -179,9 +181,9 @@ for (size in 2:5) {
   
   ### GPfates
   print("GPFates memory")
-  memGPfatesAll <- suppressMessages(
+  memGPfatesAll <- 
     system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-           intern = TRUE))
+           intern = TRUE, ignore.stdout = TRUE)
   mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
   mem1 <- str_subset(mem1, "MiB")
   mem["GPFates"] <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
