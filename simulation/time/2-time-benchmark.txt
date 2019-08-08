@@ -1,0 +1,41 @@
+"expr" "time"
+"1" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 861446455920
+"2" "suppressWarnings(edgeR())" 17842217678
+"3" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 245380781699
+"4" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 853454366185
+"5" "suppressWarnings(edgeR())" 16842429120
+"6" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 868077576675
+"7" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 240968670298
+"8" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 872604195433
+"9" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 871867814170
+"10" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 870736457577
+"11" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 52863273192
+"12" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 237172455246
+"13" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 53208404494
+"14" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 249406124972
+"15" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 246249553915
+"16" "suppressWarnings(edgeR())" 19431567658
+"17" "suppressWarnings(edgeR())" 17741883382
+"18" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 49900625026
+"19" "suppressWarnings(edgeR())" 18640552068
+"20" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 253728461941
+"21" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 55360488990
+"22" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 55162263798
+"23" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 52365544161
+"24" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 54540409531
+"25" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 251490420897
+"26" "suppressWarnings(edgeR())" 16922706485
+"27" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 244827528933
+"28" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 873285833663
+"29" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 51403536159
+"30" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 872030868473
+"31" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 253057262838
+"32" "suppressWarnings(edgeR())" 16735111092
+"33" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 52361230569
+"34" "suppressWarnings(edgeR())" 19271017505
+"35" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 875773235989
+"36" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 887589457514
+"37" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 247254486218
+"38" "suppressWarnings(edgeR())" 17778860081
+"39" "suppressWarnings(edgeR())" 17809754928
+"40" "suppressMessages(system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\"))" 57165879205
