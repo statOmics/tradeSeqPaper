@@ -36,12 +36,15 @@ FQnorm <- function(counts) {
 
 for (size in 2:5) {
   ## Generate dataset ----
+  print("dataset")
   dataset <- generate_dataset(
     model = model_bifurcating(),
     num_cells = 10^size,
     num_features = 5000,
     differentially_expressed_rate = .2
   )
+  saveRDS(dataset, here::here("simulation", "time",
+                              paste0(size, "dataset.rds")))
   ## pre-process ----
   counts <- t(dataset$counts)
   
@@ -180,14 +183,14 @@ for (size in 2:5) {
     max()
   
   ### GPfates
-  print("GPFates memory")
-  memGPfatesAll <- 
-    system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-           intern = TRUE, ignore.stdout = FALSE)
-  mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
-  mem1 <- str_subset(mem1, "MiB")
-  mem1 <- str_remove(mem1, " MiB")
-  mem["GPFates"] <- max(as.numeric(mem1))
+  # print("GPFates memory")
+  # memGPfatesAll <- 
+  #   system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+  #          intern = TRUE, ignore.stdout = FALSE)
+  # mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
+  # mem1 <- str_subset(mem1, "MiB")
+  # mem1 <- str_remove(mem1, " MiB")
+  # mem["GPFates"] <- max(as.numeric(mem1))
   
   ### All together
   write.table(x = mem,file = here("simulation", "time",
