@@ -31,7 +31,7 @@ rgl::par3d(windowRect = c(20, 30, 800, 800))
 for (i in seq_along(curves)) {
   rgl::plot3d(crv@curves[[i]]$s[order(crv@curves[[i]]$lambda), 1:3], type = "l", add = TRUE, lwd = 4, col = colpal[which.max(tail(lin@lineages[[i]], 1) == levels(clus.labels))])
 }
-rgl::plot3d(20, 90, 0, col = "black", add = TRUE)
+#rgl::plot3d(20, 90, 0, col = "black", add = TRUE)
 
 
 # rgl.postscript("~/fletcher3d.pdf", fmt="pdf")
@@ -510,17 +510,7 @@ resDf <- as.data.frame(res)
 colnames(resDf) <- c("Global", "Neur. vs. Microv.", "Neur. vs. Sust.", "Microv. vs. Sust.")
 upset(resDf[, -1], order.by = "freq", text.scale = c(1.3, 1.3, 1, 1, 2, 1))
 
-# these are TFs that are DE between clusters within a lineage
-deTFs <- openxlsx::read.xlsx("~/Downloads/mmc4.xlsx")[,1] # supplementary table 3 from fletcher et al. paper
-# which ones are also early DE between lineages?
-sigAll <- rownames(res)[res[,1]==1]
-earlyTFs <- deTFs[deTFs %in% sigAll]
-# gene set enrichment analysis with a custom background?
-
-# + which ones do we find extra?
-
-
-plotSmoothersIk <- function(m, nPoints = 100, ...) {
+plotSmoothersIk2 <- function(m, nPoints = 100, legendPos="topright", ...) {
   data <- m$model
   y <- data$y
   # construct time variable based on cell assignments.
@@ -549,39 +539,117 @@ plotSmoothersIk <- function(m, nPoints = 100, ...) {
   # predict and plot smoothers across the range
   for (jj in seq_len(nCurves)) {
     df <- .getPredictRangeDf(m, jj, nPoints = nPoints)
+    # average batch
+    df$U[] <- 0
+    df$U[,"batchGBC09B"] <- 1
     yhat <- predict(m, newdata = df, type = "response")
-    lines(x = df[, paste0("t", jj)], y = log(yhat + 1), col = cols[jj], lwd = 2)
+    lines(x = df[, paste0("t", jj)], y = log(yhat+1), col = cols[jj], lwd = 2)
   }
   # knots
   abline(v = gamList[[1]]$smooth[[1]]$xp[1], lty = 2, col = "black", lwd = 1.5)
   abline(v = gamList[[1]]$smooth[[1]]$xp[3], lty = 2, col = "black", lwd = 1.5)
-  legend("topright", c("Neuronal", "Microvillous", "Sustentacular"),
+  legend(legendPos, c("Neuronal", "Microvillous", "Sustentacular"),
     col = cols,
     lty = 1, lwd = 2, bty = "n", cex = 4 / 5
   )
 }
 
+plotSmoothersIk2(gamList[["Sox11"]])
+
+
+control=gam.control()
+control$maxit=1000
+hlp = tradeSeq::fitGAM(countsFiltered[9600:9700,], U=model.matrix(~-1+batch, contrasts.arg=list(batch=contr.sum)), pseudotime=slingPseudotime(crv, na=FALSE), cellWeights=slingCurveWeights(crv), weights=weights[1300:1400,], nknots=6, control=control)
+
+plotSmoothersIk2(hlp[["Sox11"]])
+
+
+### look at TFs
+sigAll <- rownames(res)[res[,1]==1]
+# download list of TFs from http://www.tfcheckpoint.org/index.php/browse
+tfCheck <- read.table("~/Downloads/export.txt", sep="\t", header=TRUE)
+tfAll <- as.character(tfCheck[,1])
+sigAllTFs = sigAll[toupper(sigAll) %in% tfAll]
+write.table(sigAllTFs, file="~/sigAllTFs.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+# submit for GSEA
+overlapTF <- readLines("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/case/fletcher/overlapEarlyDETFs")
+overlapSets <- overlapTF[10:30]
+overlapSetsSplit <- sapply(overlapSets, function(x) strsplit(x, split = "\t"))
+gsNames <- unname(unlist(lapply(overlapSetsSplit, "[[", 1)))
+genesInSet <- unname(unlist(lapply(overlapSetsSplit, "[[", 2)))
+genesInOverlap <- unname(unlist(lapply(overlapSetsSplit, "[[", 4)))
+pvalTF <- unname(unlist(lapply(overlapSetsSplit, "[[", 6)))
+pvalTF <- as.numeric(pvalTF[-1])
+qval <- unname(unlist(lapply(overlapSetsSplit, "[[", 7)))
+gsNames <- tolower(gsNames)
+gsNames <- gsub(x = gsNames, pattern = "_", replacement = " ")
+gsNames[-1] <- unname(sapply(gsNames[-1], function(x) substr(x, 4, nchar(x))))
+tabTF <- data.frame(
+  geneSet = gsNames[-1],
+  overlap = as.numeric(genesInOverlap[-1]),
+  genesInSet = as.numeric(genesInSet[-1]),
+  qvalue = qval[-1]
+)
+library(xtable)
+xtable(tabTF)
+
+
+plot(x=tabTF$overlap/tabTF$genesInSet, y=-log10(pvalTF), pch=16)
+
+## plot epithelial TFs
+# download epithelial cell differentiation gene set at http://software.broadinstitute.org/gsea/msigdb/geneset_page.jsp?geneSetName=GO_EPITHELIAL_CELL_DIFFERENTIATION
+epiGenes <- as.character(read.table("~/Downloads/geneset.txt", skip=2)[,1])
+epiSigTFs <- sigAllTFs[toupper(sigAllTFs) %in% epiGenes]
+mypar(mfrow=c(2,2))
+for(ii in 1:length(epiSigTFs)) plotSmoothersIk2(gamList[[epiSigTFs[ii]]])
+earlyEpiTF <- early13[epiSigTFs,]
+oo13 <- order(earlyEpiTF[,"waldStat"], decreasing=TRUE)
+
+pos=c("topleft", "topright", "topright", "topleft", rep("topright",4))
+mypar(mfrow=c(2,2), bty='l')
+for(ii in c(1,3:5)) plotSmoothersIk2(gamList[[rownames(earlyEpiTF[oo13,]) [ii] ]], legendPos=pos[ii], ylim=c(0,10))
+
+
+###### ADDITIONAL RESULTS
+### cross-reference with TFs from Fletcher et al.
+# these are TFs that are DE between clusters within a lineage
+deTFs <- openxlsx::read.xlsx("~/Downloads/mmc4.xlsx")[,1] # supplementary table 3 from fletcher et al. paper
+# which ones are also early DE between lineages?
+earlyTFs <- deTFs[deTFs %in% sigAll]
 # plot earlyTFs
 pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyTFs_OE.pdf", width = 9, height = 7)
 rafalib::mypar(mfrow = c(4, 4), bty = "l")
-for(ii in 1:length(earlyTFs)) plotSmoothersIk(gamList[[earlyTFs[ii]]], main=earlyTFs[ii])
+for(ii in 1:length(earlyTFs)) plotSmoothersIk2(gamList[[earlyTFs[ii]]], main=earlyTFs[ii])
 dev.off()
 
-
+# plot significant genes
 library(scales)
 png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE13SignGenesInAll.png", width = 9, height = 7, units = "in", res = 200)
 rafalib::mypar(mfrow = c(3, 3), bty = "l")
 for (ii in 1:9) {
-  plotSmoothersIk(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
+  plotSmoothersIk2(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
 }
 dev.off()
 
 pdf("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/earlyDE13SignGenesInAll_allGenes.pdf", width = 9, height = 7)
 rafalib::mypar(mfrow = c(4, 4), bty = "l")
 for (ii in 1:length(sigAll13)) {
-  plotSmoothersIk(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
+  plotSmoothersIk2(gamList[[sigAll13[ii]]], ylim = c(0, 10), main = sigAll13[ii])
 }
 dev.off()
+
+### custom background GSEA
+library(biomaRt)
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL")
+ensembl <- useDataset("mmusculus_gene_ensembl", mart=ensembl)
+bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_ensembl_gene"), # this is what we want to extract
+            filters="mgi_symbol", # this determines the filter
+            values=tfAll, # this are the values to filter for (get only the genes in our list)
+            mart=ensembl)
+ensemblTF <- bm[,1]
+# for DAVID
+write.table(ensemblTF, file="~/tfAllEnsembl.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
 
 ```
 
@@ -642,11 +710,9 @@ dev.off()
 
 ### early DE genes
 library(scales)
-png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/FigCaseFletcher_earlyDE.png", width = 7, height = 6, units = "in", res = 200)
-rafalib::mypar(mfrow = c(2, 2))
-for (ii in c(1, 2, 4, 5)) {
-  plotSmoothersIk(gamList[[sigAll24[ii]]], ylim = c(0, 10), main = sigAll24[ii])
-}
+png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/FigCaseFletcher_earlyDE_TFs.png", width = 7, height = 6, units = "in", res = 200)
+rafalib::mypar(mfrow = c(2, 2), bty='l')
+for(ii in c(1,3:5)) plotSmoothersIk2(gamList[[rownames(earlyEpiTF[oo13,]) [ii] ]], legendPos=pos[ii], ylim=c(0,10), main=rownames(earlyEpiTF[oo13,])[ii])
 dev.off()
 
 ```

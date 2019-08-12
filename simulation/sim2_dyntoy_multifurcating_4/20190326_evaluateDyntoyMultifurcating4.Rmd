@@ -72,12 +72,22 @@ plot(rd, col = as.numeric(as.factor(gid$group_id))+1, pch=16, asp = 1)
 
 ```
 
-# fit smoothers on raw data
+# Deriving number of knots
 
 ```{r}
 cWeights <- slingCurveWeights(crv)
 pseudoT <- slingPseudotime(crv, na=FALSE)
-gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, verbose=FALSE)
+icMat <- evaluateK(counts=counts,  pseudotime=pseudoT, cellWeights=cWeights,
+                   nGenes=500, k=3:10)
+```
+
+
+
+# fit smoothers on raw data
+
+```{r}
+gamList <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, 
+                  nknots=3, verbose=FALSE)
 ```
 
 # Test for differences at end point
@@ -148,8 +158,8 @@ fd <- new("AnnotatedDataFrame", featureInfo)
 cds <- newCellDataSet(cellData=counts, featureData=fd, expressionFamily=negbinomial.size())
 cds <- estimateSizeFactors(cds)
 cds <- estimateDispersions(cds)
-cds <- reduceDimension(cds)#, max_components = 4, method = 'ICA')
-cds <- orderCells(cds)#, num_paths=2)
+cds <- reduceDimension(cds)
+cds <- orderCells(cds)
 cds <- orderCells(cds, root_state=5)
 plot_cell_trajectory(cds, color_by = "State")
 # monocle does not find a branching point on 2 components! specify 4.
@@ -180,30 +190,15 @@ cellWeightsMon[state==1,2] <- 1 #lineage 3 as the upper lineage
 
 plot(rd, col = cols[phenoData(cds)$State], pch=16, asp = 1) ; legend("topleft", paste0(1:5), col=cols,pch=16)
 
-gamListMon <- fitGAM(counts[1:50,], pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
+gamListMon <- fitGAM(counts[1:50,], pseudotime=ptMon, cellWeights=cellWeightsMon,
+                     verbose=FALSE, nknots=3)
 plotSmoothers(gamListMon[[1]])
 
 
-gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, verbose=FALSE)
+gamListMon <- fitGAM(counts, pseudotime=ptMon, cellWeights=cellWeightsMon, 
+                     verbose=FALSE, nknots=3)
 resPatternMon <- patternTest(gamListMon)
 resEndMon <- diffEndTest(gamListMon)
-```
-
-# tradeSeq on true pseudotime
-
-```{r}
-# ### tradeSeq on true pseudotime
-# pst <- matrix(truePseudotime, nrow=ncol(counts),ncol=3, byrow=FALSE)
-# gamListTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=slingCurveWeights(crv), verbose=FALSE)
-# # end point Test
-# waldEndPointResTrueTime <- diffEndTest(gamListTrueTime)
-# padjWaldTrueTime <- p.adjust(waldEndPointResTrueTime$pvalue,"fdr")
-# sum(padjWaldTrueTime<=0.05)
-# # pattern test
-# patternResTrueTime <- patternTest(gamListTrueTime)
-# padjPatternTrueTime <- p.adjust(patternResTrueTime$pvalue,"fdr")
-# sum(padjPatternTrueTime<=0.05, na.rm=TRUE)
-
 ```
 
 # GPfates
@@ -222,20 +217,6 @@ resEndMon <- diffEndTest(gamListMon)
 # GPfatesBif <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/GPfatesBifStats.txt", header=FALSE)
 # colnames(GPfatesBif) <- c("bif_ll", "amb_ll", "shuff_bif_ll", "shuff_amb_ll", "phi0_corr", "D", "shuff_D")
 ```
-
-# GPfates weights + tradeSeq
-
-Impossible, because the GPfates weights are only for two lineages.
-
-```{r}
-# based on true pseudotime
-#gamListGPfatesTrueTime <- fitGAM(counts, pseudotime=pst, cellWeights=GPfatesWeights, verbose=FALSE)
-# end point test
-#waldEndPointResTrueTimeGPfates <- diffEndTest(gamListGPfatesTrueTime)
-# pattern test
-#patternResTrueTimeGPfates <- patternTest(gamListGPfatesTrueTime)
-```
-
 
 # Performance plots
 
