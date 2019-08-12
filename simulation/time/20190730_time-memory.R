@@ -183,18 +183,19 @@ for (size in 2:5) {
   print("GPFates memory")
   memGPfatesAll <- 
     system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-           intern = TRUE, ignore.stdout = TRUE)
-  mem1 <- sapply(memGPfatesAll, strsplit, split = "\t")
+           intern = TRUE, ignore.stdout = FALSE)
+  mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
   mem1 <- str_subset(mem1, "MiB")
-  mem["GPFates"] <- max(as.numeric(unname(sapply(mem1, substr, 10, 15))))
+  mem1 <- str_remove(mem1, " MiB")
+  mem["GPFates"] <- max(as.numeric(mem1))
   
   ### All together
   write.table(x = mem,file = here("simulation", "time",
                                   paste0(size, "-mem-benchmark.txt")))
 }
 
-file.remove(here::here("simulation", "time","Rprof.out"))
-file.remove(here::here("simulation", "time","Rprof.out"))
-file.remove("timeBenchLogCpm.txt")
-file.remove("timeBenchSampleInfo.txt")
-file.remove("m.pkl")
+file.remove(here::here("simulation", "time", "Rprof.out"))
+file.remove(here::here("simulation", "time", "Rprof.out"))
+file.remove(here::here("simulation", "time", "timeBenchLogCpm.txt"))
+file.remove(here::here("simulation", "time", "timeBenchSampleInfo.txt"))
+file.remove(here::here("simulation", "time", "m.pkl"))
