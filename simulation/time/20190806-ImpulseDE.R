@@ -113,3 +113,9 @@ df <- runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
                       boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
                       vecDispersionsExternal = vecDispersions, scaNProc = 2)
 Rprof(filename = NULL)
+print(
+  summaryRprof(
+    filename = here::here("simulation", "time", "small-ImpulseDE-memory.Rprof"),
+    memory = "both")$by.total[, "mem.total"] %>% 
+    max(na.rm = TRUE)
+  )

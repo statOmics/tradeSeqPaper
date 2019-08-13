@@ -8,7 +8,7 @@ palette(wes_palette("Darjeeling1", 10, type = "continuous"))
 
 time_benchmarks <- list()
 mem_benchmarks <- list()
-for (size in 2:5) {
+for (size in 2:2) {
   ## Benchmark time ----
   time_benchmark <- read.table(
     file = here::here("simulation", "time", paste0(size, "-time-benchmark.txt")))
@@ -22,11 +22,35 @@ for (size in 2:5) {
   time_benchmarks[[size - 1]] <- time_benchmark
   
   ## Benchmark memory ----
-  mem_benchmarks[size - 1] <- read.table(here::here("simulation", "time",
-                                         paste0(size, "-mem-benchmark.txt")))
+  mem_benchmark <- read.table(
+    here::here("simulation", "time", paste0(size, "-mem-benchmark.txt")))
+  mem_benchmark <- mem_benchmark %>%
+    mutate(method = rownames(mem_benchmark),
+           n = 10^size) %>%
+    rename("mem" = x)
+  mem_benchmarks[[size - 1]] <- mem_benchmark
 }
 
 time_benchmarks <- do.call("rbind", time_benchmarks) %>% as.data.frame()
-mem_benchmarks <- do.call("rbind", mem_benchmarks) %>% as.data.frame()
+time_benchmarks <- time_benchmarks %>% add_row("expr" = "ImpulseDE",
+                                               "time" = duration(3.5, units = "hours"),
+                                               n = 100)
+mem_benchmarks <- do.call("rbind", mem_benchmarks) %>% as.data.frame() %>%
+  add_row(mem = 148.2,
+          "method" = "ImpulseDE",
+          n = 100)
 
+ggplot(time_benchmarks, aes(x = n, y = as.numeric(time) / 60,
+                            group = expr, col = expr)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(x = "number of cells", y = "time (minutes, log scale)") +
+  scale_y_log10()
 
+ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
+                            group = method, col = method)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(x = "number of cells", y = "memory (kB)") +
+  scale_x_log10() +
+  scale_y_log10()
