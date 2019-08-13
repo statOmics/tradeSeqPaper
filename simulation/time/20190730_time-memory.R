@@ -34,17 +34,12 @@ FQnorm <- function(counts) {
 
 ## datasets ----
 
-for (size in 3:5) {
+for (size in 3:4) {
   ## Generate dataset ----
-  print("dataset")
-  dataset <- generate_dataset(
-    model = model_bifurcating(),
-    num_cells = 10^size,
-    num_features = 5000,
-    differentially_expressed_rate = .2
-  )
-  saveRDS(dataset, here::here("simulation", "time",
-                              paste0(size, "dataset.rds")))
+  print(paste0("dataset of size", 10^size))
+  dataset <- readRDS(
+    here::here("simulation", "time", paste0(size, "dataset.rds"))
+    )
   ## pre-process ----
   counts <- t(dataset$counts)
   
@@ -61,6 +56,7 @@ for (size in 3:5) {
   
   
   ## Running slingshot ----
+  print("...slingshot")
   ## dim red
   pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
   rd <- pca$x[, 1:4]
@@ -74,6 +70,7 @@ for (size in 3:5) {
   crv <- getCurves(lin)
   
   ## Monocle BEAM analysis ----
+  print("...BEAM")
   ### Monocle 2 BEAM analysis
   trueWeights <- getWeightsBifurcation(dataset, crv)
   featureInfo <- data.frame(gene_short_name = rownames(counts))
@@ -97,8 +94,9 @@ for (size in 3:5) {
   ## tradeSeq  ----
   ### tradeSeq: fit smoothers on truth data
   trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
-  
+  print("...tradeSeq")  
   ## edgeR ----
+  print("...edgeR")
   edgeR <- function(){
     clF <- as.factor(cl)
     design <- model.matrix(~clF)
@@ -119,6 +117,7 @@ for (size in 3:5) {
   }
   
   ## GPFates ----
+  print("...GPfates")
   logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
   sampleInfo <- data.frame(global_pseudotime = truePseudotime)
   rownames(sampleInfo) <- colnames(counts)
@@ -130,7 +129,7 @@ for (size in 3:5) {
          ignore.stdout = TRUE)
   
   ## Benchmark time ----
-  print("benchmark")
+  print("...benchmark")
   time_benchmark <- microbenchmark(
     suppressWarnings(
       fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)),
@@ -138,7 +137,7 @@ for (size in 3:5) {
     suppressWarnings(edgeR()),
     system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
       ignore.stdout = TRUE),
-    times = 10L
+    times = 5L
   )
   write.table(x = time_benchmark,
               file = here("simulation", "time",
@@ -149,7 +148,7 @@ for (size in 3:5) {
   names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
   
   ### tradeSeq
-  print("tradeSeq memory")
+  print("...tradeSeq memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
@@ -161,7 +160,7 @@ for (size in 3:5) {
     max()
   
   ### BEAM
-  print("BEAM memory")
+  print("...BEAM memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
         memory.profiling = TRUE)
   test <- BEAM_kvdb(cds, cores = 1)
@@ -177,7 +176,7 @@ for (size in 3:5) {
         memory.profiling = TRUE)
   test <- edgeR()
   Rprof(filename = 'NULL')
-  mem["edgeR"] <- summaryRprof(
+  mem["...edgeR"] <- summaryRprof(
     filename = here::here("simulation", "time", "Rprof.out"),
     memory = "both")$by.total[, "mem.total"] %>% 
     max()
