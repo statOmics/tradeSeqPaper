@@ -1,0 +1,448 @@
+
+R version 3.5.1 (2018-07-02) -- "Feather Spray"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(monocle)
+Loading required package: Matrix
+Loading required package: Biobase
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:Matrix’:
+
+    colMeans, colSums, rowMeans, rowSums, which
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colMeans,
+    colnames, colSums, dirname, do.call, duplicated, eval, evalq,
+    Filter, Find, get, grep, grepl, intersect, is.unsorted, lapply,
+    lengths, Map, mapply, match, mget, order, paste, pmax, pmax.int,
+    pmin, pmin.int, Position, rank, rbind, Reduce, rowMeans, rownames,
+    rowSums, sapply, setdiff, sort, table, tapply, union, unique,
+    unsplit, which, which.max, which.min
+
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+Loading required package: ggplot2
+Loading required package: VGAM
+Loading required package: stats4
+Loading required package: splines
+Loading required package: DDRTree
+Loading required package: irlba
+> library(DESeq2)
+Loading required package: S4Vectors
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:Matrix’:
+
+    expand
+
+The following object is masked from ‘package:base’:
+
+    expand.grid
+
+Loading required package: IRanges
+Loading required package: GenomicRanges
+Loading required package: GenomeInfoDb
+Loading required package: SummarizedExperiment
+Loading required package: DelayedArray
+Loading required package: matrixStats
+
+Attaching package: ‘matrixStats’
+
+The following objects are masked from ‘package:Biobase’:
+
+    anyMissing, rowMedians
+
+Loading required package: BiocParallel
+
+Attaching package: ‘DelayedArray’
+
+The following objects are masked from ‘package:matrixStats’:
+
+    colMaxs, colMins, colRanges, rowMaxs, rowMins, rowRanges
+
+The following objects are masked from ‘package:base’:
+
+    aperm, apply
+
+
+Attaching package: ‘DESeq2’
+
+The following object is masked from ‘package:VGAM’:
+
+    rlog
+
+> library(RColorBrewer)
+> library(mgcv)
+Loading required package: nlme
+
+Attaching package: ‘nlme’
+
+The following object is masked from ‘package:IRanges’:
+
+    collapse
+
+This is mgcv 1.8-24. For overview type 'help("mgcv-package")'.
+
+Attaching package: ‘mgcv’
+
+The following object is masked from ‘package:VGAM’:
+
+    s
+
+> library(slingshot)
+Loading required package: princurve
+Warning messages:
+1: replacing previous import ‘SingleCellExperiment::weights’ by ‘stats::weights’ when loading ‘slingshot’ 
+2: In rgl.init(initValue, onlyNULL) : RGL: unable to open X11 display
+3: 'rgl_init' failed, running with rgl.useNULL = TRUE 
+> library(tradeSeq)
+> library(microbenchmark)
+> library(edgeR)
+Loading required package: limma
+
+Attaching package: ‘limma’
+
+The following object is masked from ‘package:DESeq2’:
+
+    plotMA
+
+The following object is masked from ‘package:BiocGenerics’:
+
+    plotMA
+
+> library(here)
+here() starts at /accounts/campus/hector.rouxdebezieux/tradeSeqPaper
+> library(rafalib)
+> library(wesanderson)
+> library(BiocParallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(ImpulseDE2)
+> library(tidyverse)
+── Attaching packages ─────────────────────────────────────── tidyverse 1.2.1 ──
+✔ tibble  2.0.1     ✔ purrr   0.3.0
+✔ tidyr   0.8.2     ✔ dplyr   0.8.3
+✔ readr   1.3.1     ✔ stringr 1.3.1
+✔ tibble  2.0.1     ✔ forcats 0.3.0
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ purrr::accumulate() masks foreach::accumulate()
+✖ dplyr::collapse()   masks nlme::collapse(), IRanges::collapse()
+✖ dplyr::combine()    masks Biobase::combine(), BiocGenerics::combine()
+✖ dplyr::count()      masks matrixStats::count()
+✖ dplyr::desc()       masks IRanges::desc()
+✖ tidyr::expand()     masks S4Vectors::expand(), Matrix::expand()
+✖ tidyr::fill()       masks VGAM::fill()
+✖ dplyr::filter()     masks stats::filter()
+✖ dplyr::first()      masks S4Vectors::first()
+✖ dplyr::lag()        masks stats::lag()
+✖ ggplot2::Position() masks BiocGenerics::Position(), base::Position()
+✖ purrr::reduce()     masks GenomicRanges::reduce(), IRanges::reduce()
+✖ dplyr::rename()     masks S4Vectors::rename()
+✖ purrr::simplify()   masks DelayedArray::simplify()
+✖ dplyr::slice()      masks IRanges::slice()
+✖ purrr::when()       masks foreach::when()
+> library(dyno)
+Loading required package: dynfeature
+Loading required package: dynguidelines
+Loading required package: dynmethods
+Loading required package: dynplot
+Loading required package: dynwrap
+> library(dyntoy)
+> library(here)
+> source(here::here("simulation", "time", "20190611_helper.R"))
+> 
+> set.seed(87657)
+> dataset <- generate_dataset(
++   model = model_bifurcating(),
++   num_cells = 100,
++   num_features = 5000,
++   differentially_expressed_rate = .2
++ )
+> 
+> FQnorm <- function(counts) {
++   rk <- apply(counts, 2, rank, ties.method = "min")
++   counts.sort <- apply(counts, 2, sort)
++   refdist <- apply(counts.sort, 1, median)
++   norm <- apply(rk, 2, function(r) {
++     refdist[r]
++   })
++   rownames(norm) <- rownames(counts)
++   return(norm)
++ }
+> 
+> ## pre-process ----
+> counts <- t(dataset$counts)
+> 
+> # get milestones
+> gid <- dataset$prior_information$groups_id
+> gid <- gid[match(colnames(counts), gid$cell_id), ]
+> 
+> pal <- wes_palette("Zissou1", 12, type = "continuous")
+> truePseudotime <- dataset$prior_information$timecourse_continuous
+> g <- Hmisc::cut2(truePseudotime, g = 12)
+> 
+> # quantile normalization
+> normCounts <- round(FQnorm(counts))
+> 
+> 
+> ## Running slingshot ----
+> ## dim red
+> pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
+> rd <- pca$x[, 1:3]
+> ## cluster
+> cl <- as.factor(gid$group_id)
+> 
+> # lineages
+> lin <- getLineages(rd, as.numeric(cl), start.clus = 1,
++                    end.clus = c(2, 4))
+Using full covariance matrix
+> # curves
+> crv <- getCurves(lin)
+> trueWeights <- getWeightsBifurcation(dataset, crv)
+> trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
+> 
+> gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
++                     cellWeights = trueWeights)
+Warning messages:
+1: In if (which(dupId) == length(knotLocs)) { :
+  the condition has length > 1 and only the first element will be used
+2: In fitGAM(as.matrix(counts)[1:10, ], pseudotime = trueT, cellWeights = trueWeights) :
+  Too many cells seem to be squeezed at one pseudotime value, the smoothers will work with evenly spaced knots instead of quantile-based knots. Interpret results with caution. Increase the number of knots to avoid this issue
+> m <- gamList[[1]]
+> branch <- rep(NA, ncol(counts))
+> time <- rep(NA, ncol(counts))
+> branch[m$model$l1 == 1] <- "A"
+> time[m$model$l1 == 1] <- trueT[m$model$l1 == 1, 1]
+> branch[m$model$l2 == 1] <- "B"
+> time[m$model$l2 == 1] <- trueT[m$model$l2 == 1, 2]
+> condition <- ifelse(branch == "A", "control", "case")
+> # ImpulseDE2 cannot handle datasets where every gene contains at least one zero.
+> # since then it errors on the DESeq2 size factor estimation. Since the data is
+> # already quantile normalized, we provide a size factor of 1 as input.
+> sf <- rep(1, ncol(normCounts)) # data is already normalized
+> names(sf) <- colnames(normCounts)
+> # dfAnnotation
+> dfAnn <- data.frame(Sample = colnames(counts), Condition = condition, Time = time)
+> # Even with supplied size factors, it errors because it still attempts to calculate
+> # the size factors for dispersion estimation with DESeq2. Do it manually.
+> dds <- suppressWarnings(DESeqDataSetFromMatrix(
++   countData = round(normCounts),
++   colData = dfAnn,
++   design = ~ Condition + Condition:Time
++ ))
+converting counts to integer mode
+> dds <- estimateSizeFactors(dds, type = "poscounts")
+> dds <- estimateDispersions(dds)
+gene-wise dispersion estimates
+mean-dispersion relationship
+final dispersion estimates
+> vecDispersionsInv <- mcols(dds)$dispersion
+> vecDispersions <- 1 / vecDispersionsInv
+> names(vecDispersions) <- rownames(dds)
+> 
+> # time_benchmark <- microbenchmark(
+> #   runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
+> #                 boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
+> #                 vecDispersionsExternal = vecDispersions, scaNProc = 2),
+> #   times = 10L
+> # )
+> # 
+> # write.table(x = time_benchmark,
+> #             file = here::here("simulation", "time", "ImpulseDE-time.txt"))
+> 
+> Rprof(here::here("simulation", "time", "small-ImpulseDE-memory.Rprof"),
++       memory.profiling = TRUE)
+> df <- runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
++                       boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
++                       vecDispersionsExternal = vecDispersions, scaNProc = 2)
+ImpulseDE2 for count data, v1.6.1
+# Process input
+Processing Details:
+ImpulseDE2 runs in case-ctrl mode.
+Found time points: 0.88293443885746,1.06208988063691,0.79646539406171,1.20574562357509,0.58095445529107,0.75646732538007,0.70536194765728,0.90894546417543,0.36854356020115,1.31689493516841,1.60928942514249,1.42724568103456,1.46267557800471,1.43910777304554,0.19501487991481,1.72882430255412,1.27740369204713,0.78819086590596,1.45577097434513,1.1104619049584,0.98564098427215,0.83396482637887,0.31316914136826,0.0442684081450699,1.24698309268843,0.95122458254039,1.46620400057038,0,1.55161073741911,0.9391354515952,1.30928764345963,0.9842899096404,1.00825090604743,1.00144677930231,0.33847664796782,0.25508809336251,0.85270679229857,1.07531731962041,0.3085091037141,0.40351080909213,0.11831773396625,0.0858225769452101,0.48377914523814,1.00118218157692,0.0400229880171501,0.74802543606607,1.49083639495074,0.84913248829958,1.36866760724248,0.42116523529712,0.37837942439782,1.18192895256354,0.79602507102039,1.29535520216482,0.42470493807294,0.3586263449417,1.32848348479136,0.6092843871377,0.85079917954949,1.32346961864765,1.3696320233204,1.71656568917937,0.70761994760468,0.84715898266842,0.50791563784199,1.23738792167379,0.36287652177943,0.02374170700147,0.97854396104173,1.21933101176736,0.69181942962868,1.12452397126711,1.07411563917752,1.59626094006159
+Case: Found the samples at time point 0.88293443885746: C1
+Case: Found the samples at time point 1.06208988063691: C2
+Case: Found the samples at time point 0.79646539406171: 
+Case: Found the samples at time point 1.20574562357509: 
+Case: Found the samples at time point 0.58095445529107: 
+Case: Found the samples at time point 0.75646732538007: C9,C16,C33,C45,C49,C79,C97
+Case: Found the samples at time point 0.70536194765728: 
+Case: Found the samples at time point 0.90894546417543: 
+Case: Found the samples at time point 0.36854356020115: C10
+Case: Found the samples at time point 1.31689493516841: 
+Case: Found the samples at time point 1.60928942514249: 
+Case: Found the samples at time point 1.42724568103456: C13
+Case: Found the samples at time point 1.46267557800471: C14
+Case: Found the samples at time point 1.43910777304554: C15
+Case: Found the samples at time point 0.19501487991481: C17
+Case: Found the samples at time point 1.72882430255412: C18,C48,C50,C57,C93,C95
+Case: Found the samples at time point 1.27740369204713: 
+Case: Found the samples at time point 0.78819086590596: 
+Case: Found the samples at time point 1.45577097434513: 
+Case: Found the samples at time point 1.1104619049584: 
+Case: Found the samples at time point 0.98564098427215: C25
+Case: Found the samples at time point 0.83396482637887: C26
+Case: Found the samples at time point 0.31316914136826: 
+Case: Found the samples at time point 0.0442684081450699: 
+Case: Found the samples at time point 1.24698309268843: C29
+Case: Found the samples at time point 0.95122458254039: C30
+Case: Found the samples at time point 1.46620400057038: C31
+Case: Found the samples at time point 0: C32,C74,C78,C98
+Case: Found the samples at time point 1.55161073741911: C34
+Case: Found the samples at time point 0.9391354515952: 
+Case: Found the samples at time point 1.30928764345963: 
+Case: Found the samples at time point 0.9842899096404: 
+Case: Found the samples at time point 1.00825090604743: 
+Case: Found the samples at time point 1.00144677930231: 
+Case: Found the samples at time point 0.33847664796782: C41
+Case: Found the samples at time point 0.25508809336251: C42
+Case: Found the samples at time point 0.85270679229857: 
+Case: Found the samples at time point 1.07531731962041: 
+Case: Found the samples at time point 0.3085091037141: C46
+Case: Found the samples at time point 0.40351080909213: C47
+Case: Found the samples at time point 0.11831773396625: 
+Case: Found the samples at time point 0.0858225769452101: 
+Case: Found the samples at time point 0.48377914523814: 
+Case: Found the samples at time point 1.00118218157692: 
+Case: Found the samples at time point 0.0400229880171501: 
+Case: Found the samples at time point 0.74802543606607: C58
+Case: Found the samples at time point 1.49083639495074: C77
+Case: Found the samples at time point 0.84913248829958: 
+Case: Found the samples at time point 1.36866760724248: C61
+Case: Found the samples at time point 0.42116523529712: C62
+Case: Found the samples at time point 0.37837942439782: C63
+Case: Found the samples at time point 1.18192895256354: C64
+Case: Found the samples at time point 0.79602507102039: C65
+Case: Found the samples at time point 1.29535520216482: C66
+Case: Found the samples at time point 0.42470493807294: 
+Case: Found the samples at time point 0.3586263449417: 
+Case: Found the samples at time point 1.32848348479136: 
+Case: Found the samples at time point 0.6092843871377: 
+Case: Found the samples at time point 0.85079917954949: C73
+Case: Found the samples at time point 1.32346961864765: 
+Case: Found the samples at time point 1.3696320233204: 
+Case: Found the samples at time point 1.71656568917937: C80
+Case: Found the samples at time point 0.70761994760468: C81
+Case: Found the samples at time point 0.84715898266842: C82
+Case: Found the samples at time point 0.50791563784199: 
+Case: Found the samples at time point 1.23738792167379: 
+Case: Found the samples at time point 0.36287652177943: 
+Case: Found the samples at time point 0.02374170700147: C89
+Case: Found the samples at time point 0.97854396104173: C90
+Case: Found the samples at time point 1.21933101176736: 
+Case: Found the samples at time point 0.69181942962868: C94
+Case: Found the samples at time point 1.12452397126711: C96
+Case: Found the samples at time point 1.07411563917752: 
+Case: Found the samples at time point 1.59626094006159: 
+Control: Found the following samples at time point 0.88293443885746:
+Control: Found the following samples at time point 1.06208988063691:
+Control: Found the following samples at time point 0.79646539406171:C3
+Control: Found the following samples at time point 1.20574562357509:C4
+Control: Found the following samples at time point 0.58095445529107:C5
+Control: Found the following samples at time point 0.75646732538007:C6,C20,C23,C70,C71,C92
+Control: Found the following samples at time point 0.70536194765728:C7
+Control: Found the following samples at time point 0.90894546417543:C8
+Control: Found the following samples at time point 0.36854356020115:
+Control: Found the following samples at time point 1.31689493516841:C11
+Control: Found the following samples at time point 1.60928942514249:C12
+Control: Found the following samples at time point 1.42724568103456:
+Control: Found the following samples at time point 1.46267557800471:
+Control: Found the following samples at time point 1.43910777304554:
+Control: Found the following samples at time point 0.19501487991481:
+Control: Found the following samples at time point 1.72882430255412:C84,C85
+Control: Found the following samples at time point 1.27740369204713:C19
+Control: Found the following samples at time point 0.78819086590596:C21
+Control: Found the following samples at time point 1.45577097434513:C22
+Control: Found the following samples at time point 1.1104619049584:C24
+Control: Found the following samples at time point 0.98564098427215:
+Control: Found the following samples at time point 0.83396482637887:
+Control: Found the following samples at time point 0.31316914136826:C27
+Control: Found the following samples at time point 0.0442684081450699:C28
+Control: Found the following samples at time point 1.24698309268843:
+Control: Found the following samples at time point 0.95122458254039:
+Control: Found the following samples at time point 1.46620400057038:
+Control: Found the following samples at time point 0:C38,C51,C83
+Control: Found the following samples at time point 1.55161073741911:
+Control: Found the following samples at time point 0.9391354515952:C35
+Control: Found the following samples at time point 1.30928764345963:C36
+Control: Found the following samples at time point 0.9842899096404:C37
+Control: Found the following samples at time point 1.00825090604743:C39
+Control: Found the following samples at time point 1.00144677930231:C40
+Control: Found the following samples at time point 0.33847664796782:
+Control: Found the following samples at time point 0.25508809336251:
+Control: Found the following samples at time point 0.85270679229857:C43
+Control: Found the following samples at time point 1.07531731962041:C44
+Control: Found the following samples at time point 0.3085091037141:
+Control: Found the following samples at time point 0.40351080909213:
+Control: Found the following samples at time point 0.11831773396625:C52
+Control: Found the following samples at time point 0.0858225769452101:C53
+Control: Found the following samples at time point 0.48377914523814:C54
+Control: Found the following samples at time point 1.00118218157692:C55
+Control: Found the following samples at time point 0.0400229880171501:C56
+Control: Found the following samples at time point 0.74802543606607:
+Control: Found the following samples at time point 1.49083639495074:C59
+Control: Found the following samples at time point 0.84913248829958:C60
+Control: Found the following samples at time point 1.36866760724248:
+Control: Found the following samples at time point 0.42116523529712:
+Control: Found the following samples at time point 0.37837942439782:
+Control: Found the following samples at time point 1.18192895256354:
+Control: Found the following samples at time point 0.79602507102039:
+Control: Found the following samples at time point 1.29535520216482:
+Control: Found the following samples at time point 0.42470493807294:C67
+Control: Found the following samples at time point 0.3586263449417:C68
+Control: Found the following samples at time point 1.32848348479136:C69
+Control: Found the following samples at time point 0.6092843871377:C72
+Control: Found the following samples at time point 0.85079917954949:
+Control: Found the following samples at time point 1.32346961864765:C75
+Control: Found the following samples at time point 1.3696320233204:C76
+Control: Found the following samples at time point 1.71656568917937:
+Control: Found the following samples at time point 0.70761994760468:
+Control: Found the following samples at time point 0.84715898266842:
+Control: Found the following samples at time point 0.50791563784199:C86
+Control: Found the following samples at time point 1.23738792167379:C87
+Control: Found the following samples at time point 0.36287652177943:C88
+Control: Found the following samples at time point 0.02374170700147:
+Control: Found the following samples at time point 0.97854396104173:
+Control: Found the following samples at time point 1.21933101176736:C91
+Control: Found the following samples at time point 0.69181942962868:
+Control: Found the following samples at time point 1.12452397126711:
+Control: Found the following samples at time point 1.07411563917752:C99
+Control: Found the following samples at time point 1.59626094006159:C100
+Input contained 5000 genes/regions.
+Selected 5000 genes/regions for analysis.

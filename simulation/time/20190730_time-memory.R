@@ -34,7 +34,7 @@ FQnorm <- function(counts) {
 
 ## datasets ----
 
-for (size in 2:5) {
+for (size in 3:5) {
   ## Generate dataset ----
   print("dataset")
   dataset <- generate_dataset(
