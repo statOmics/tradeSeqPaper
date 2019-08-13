@@ -134,9 +134,7 @@ for (size in 3:4) {
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
     BEAM_kvdb(cds, cores = 1),
     edgeR(),
-    # system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
-    #   ignore.stdout = TRUE),
-    times = 5L
+    times = 2L
   )
   write.table(x = time_benchmark,
               file = here("simulation", "time",
@@ -180,15 +178,18 @@ for (size in 3:4) {
     memory = "both")$by.total[, "mem.total"] %>% 
     max()
   
+  write.table(x = mem,file = here("simulation", "time",
+                                  paste0(size, "-mem-benchmark.txt")))
+  
   ### GPfates
-  # print("GPFates memory")
-  # memGPfatesAll <-
-  #   system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-  #          intern = TRUE, ignore.stdout = FALSE)
-  # mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
-  # mem1 <- str_subset(mem1, "MiB")
-  # mem1 <- str_remove(mem1, " MiB")
-  # mem["GPFates"] <- max(as.numeric(mem1))
+  print("GPFates memory")
+  memGPfatesAll <-
+    system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+           intern = TRUE, ignore.stdout = FALSE)
+  mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
+  mem1 <- str_subset(mem1, "MiB")
+  mem1 <- str_remove(mem1, " MiB")
+  mem["GPFates"] <- max(as.numeric(mem1))
   
   ### All together
   write.table(x = mem,file = here("simulation", "time",
