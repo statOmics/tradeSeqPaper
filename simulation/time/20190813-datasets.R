@@ -12,7 +12,7 @@ set.seed(87657)
 
 ## datasets ----
 
-for (size in 4:5) {
+for (size in 2:4) {
   ## Generate dataset ----
   print("dataset")
   dataset <- generate_dataset(

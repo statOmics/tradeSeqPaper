@@ -131,12 +131,11 @@ for (size in 3:4) {
   ## Benchmark time ----
   print("...benchmark")
   time_benchmark <- microbenchmark(
-    suppressWarnings(
-      fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)),
-    suppressWarnings(BEAM_kvdb(cds, cores = 1)),
-    suppressWarnings(edgeR()),
-    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
-      ignore.stdout = TRUE),
+    fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights),
+    BEAM_kvdb(cds, cores = 1),
+    edgeR(),
+    # system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
+    #   ignore.stdout = TRUE),
     times = 5L
   )
   write.table(x = time_benchmark,
@@ -183,7 +182,7 @@ for (size in 3:4) {
   
   ### GPfates
   # print("GPFates memory")
-  # memGPfatesAll <- 
+  # memGPfatesAll <-
   #   system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
   #          intern = TRUE, ignore.stdout = FALSE)
   # mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
