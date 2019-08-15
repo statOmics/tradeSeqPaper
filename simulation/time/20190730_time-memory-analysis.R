@@ -69,4 +69,3 @@ p <- ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
 ggsave(filename = here::here("simulation", "time", "figures",
                              "memory_benchmark.pdf"),
        plot = p)
-r
