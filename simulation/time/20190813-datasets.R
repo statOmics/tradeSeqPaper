@@ -21,7 +21,7 @@ for (size in 2:4) {
     num_features = 5000,
     differentially_expressed_rate = .2
   )
-  saveRDS(dataset, here::here("simulation", "time",
+  saveRDS(dataset, here::here("simulation", "time", "data",
                               paste0(size, "dataset.rds")))
   
 }

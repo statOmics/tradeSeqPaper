@@ -8,10 +8,11 @@ palette(wes_palette("Darjeeling1", 10, type = "continuous"))
 
 time_benchmarks <- list()
 mem_benchmarks <- list()
-for (size in 2:3) {
+for (size in 2:4) {
   ## Benchmark time ----
   time_benchmark <- read.table(
-    file = here::here("simulation", "time", paste0(size, "-time-benchmark.txt")))
+    file = here::here("simulation", "time", "data",
+                      paste0(size, "-time-benchmark.txt")))
   time_benchmark <- time_benchmark %>%
     mutate(expr = case_when(str_detect(expr, "edgeR") ~ "edgeR",
                             str_detect(expr, "fitGAM") ~ "tradeSeq",
@@ -23,7 +24,8 @@ for (size in 2:3) {
   
   ## Benchmark memory ----
   mem_benchmark <- read.table(
-    here::here("simulation", "time", paste0(size, "-mem-benchmark.txt")))
+    here::here("simulation", "time", "data",
+               paste0(size, "-mem-benchmark.txt")))
   mem_benchmark <- mem_benchmark %>%
     mutate(method = rownames(mem_benchmark),
            n = 10^size) %>%
@@ -32,26 +34,38 @@ for (size in 2:3) {
 }
 
 time_benchmarks <- do.call("rbind", time_benchmarks) %>% as.data.frame()
-# time_benchmarks <- time_benchmarks %>% add_row("expr" = "ImpulseDE",
-#                                                "time" = duration(3.5, units = "hours"),
-#                                                n = 100)
+time_benchmarks <- time_benchmarks %>% add_row("expr" = "ImpulseDE2",
+                                               "time" = duration(3.5, units = "hours"),
+                                               n = 100)
 mem_benchmarks <- do.call("rbind", mem_benchmarks) %>% as.data.frame() %>%
-#   add_row(mem = 148.2,
-#           "method" = "ImpulseDE",
-#           n = 100) %>%
+  add_row(mem = 148.2,
+          "method" = "ImpulseDE2",
+          n = 100) %>%
   identity()
 
-ggplot(time_benchmarks, aes(x = n, y = as.numeric(time) / 60,
-                            group = interaction(expr, n), col = expr)) +
-  geom_point() +
+cols <- c("#4292C6", "#e41a1c", "#e78ac3", "#ff7f00", "darkgoldenrod1")
+names(cols) <- c("tradeSeq", "BEAM", "GPfates", "edgeR", "ImpulseDE2")
+p <- ggplot(time_benchmarks, aes(x = n, y = as.numeric(time) / 60,
+                            group = expr, col = expr)) +
+  geom_point(size = 3) +
+  geom_line() +
   theme_classic() +
-  labs(x = "number of cells", y = "time (minutes)") +
-  scale_x_log10()
+  labs(x = "number of cells", y = "time (minutes)", col = 'method') +
+  scale_x_log10() +
+  scale_color_manual(values = cols, breaks = names(cols))
+ggsave(filename = here::here("simulation", "time", "figures",
+                             "time_benchmark.pdf"),
+       plot = p)
 
-ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
-                           group = interaction(method, n),
+p <- ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
+                           group = method, n,
                            col = method)) +
-  geom_point() +
+  geom_point(size = 3) +
   theme_classic() +
+  geom_line() +
   labs(x = "number of cells", y = "memory (kB)") +
-  scale_x_log10()
+  scale_x_log10() +
+  scale_color_manual(values = cols, breaks = names(cols))
+ggsave(filename = here::here("simulation", "time", "figures",
+                             "memory_benchmark.pdf"),
+       plot = p)

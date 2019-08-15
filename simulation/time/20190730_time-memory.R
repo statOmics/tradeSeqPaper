@@ -38,7 +38,7 @@ for (size in 3:4) {
   ## Generate dataset ----
   print(paste0("dataset of size", 10^size))
   dataset <- readRDS(
-    here::here("simulation", "time", paste0(size, "dataset.rds"))
+    here::here("simulation", "time", "data", paste0(size, "dataset.rds"))
     )
   ## pre-process ----
   counts <- t(dataset$counts)
@@ -139,7 +139,7 @@ for (size in 3:4) {
     times = 2L
   )
   write.table(x = time_benchmark,
-              file = here("simulation", "time",
+              file = here("simulation", "time", "data",
                           paste0(size, "-time-benchmark.txt")))
   
   ## Benchmark memory ----
@@ -195,7 +195,7 @@ for (size in 3:4) {
   mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
   
   ### All together
-  write.table(x = mem,file = here("simulation", "time",
+  write.table(x = mem,file = here("simulation", "time", "data", 
                                   paste0(size, "-mem-benchmark.txt")))
 }
 
