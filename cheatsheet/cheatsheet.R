@@ -52,7 +52,7 @@ for (jj in seq_len(nCurves)) {
 # Add the knots
 p <- p + 
   scale_x_continuous(minor_breaks = m$smooth[[1]]$xp + .001) +
-  theme(panel.grid.minor.x = element_line(linetype = "dashed"))
+  theme(panel.grid.minor.x = element_line(linetype = "dashed", size=1/2))
 
 ggsave("figures/lineages.pdf", p, height = 7)
 

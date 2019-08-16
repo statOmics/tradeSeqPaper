@@ -63,6 +63,12 @@ plotPerformanceCurve <- function(cobraObject){
     pDyntoy
 }
 
+## write source data file
+for(ii in 1:length(cobraFiles)){
+    cobra <- readRDS(cobraFiles[ii])
+    write.table(pval(cobra), file=paste0("~/pvalDataset",ii,".txt"))
+}
+
 
 for(ii in 1:length(cobraFiles)){
     cobra <- readRDS(cobraFiles[ii])

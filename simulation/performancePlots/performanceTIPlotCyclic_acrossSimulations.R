@@ -1,3 +1,4 @@
+setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -64,6 +65,12 @@ plotPerformanceCurve <- function(cobraObject){
     scale_color_manual(values = cols, breaks = names(cols)) +
     scale_linetype_manual(values = linetypes, breaks = names(linetypes))
     pDyntoy
+}
+
+## write source data file
+for(ii in 1:length(cobraFiles)){
+    cobra <- readRDS(cobraFiles[ii])
+    write.table(pval(cobra), file=paste0("~/sourceDataTradeSeq/fig3/cyclic/pvalDataset",ii,".txt"))
 }
 
 
