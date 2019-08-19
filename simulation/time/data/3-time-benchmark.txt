@@ -6,3 +6,4 @@
 "5" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)" 797855352419
 "6" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)" 796837765877
 "7" "system('python3 ./20190806_analyzeGPfatesTimeBenchmark.py', ignore.stdout = TRUE)" 5040403000000
+"8" "system('python3 ./20190806_analyzeGPfatesTimeBenchmark.py', ignore.stdout = TRUE)" 5040409000000
