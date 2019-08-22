@@ -5,4 +5,4 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 
-R CMD BATCH --no-save 20190730_time-memory.R 20190730_time-memory.Rout
+R CMD BATCH --no-save 20190822_time-tests.R 20190822_time-tests.Rout
