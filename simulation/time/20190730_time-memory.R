@@ -72,7 +72,7 @@ for (size in 2:4) {
   # ## Monocle BEAM analysis ----
   # print("...BEAM")
   # ### Monocle 2 BEAM analysis
-  # trueWeights <- getWeightsBifurcation(dataset, crv)
+  trueWeights <- getWeightsBifurcation(dataset, crv)
   # featureInfo <- data.frame(gene_short_name = rownames(counts))
   # rownames(featureInfo) <- rownames(counts)
   # fd <- new("AnnotatedDataFrame", featureInfo)

@@ -12,7 +12,6 @@ library(tradeSeq)
 library(rafalib)
 library(dyno)
 library(dyntoy)
-
 library(wesanderson)
 
 ## Pre-process ----
@@ -71,6 +70,7 @@ for (size in 2:4) {
   
   ## tradeSeq  ----
   ### tradeSeq: fit smoothers on truth data
+  trueWeights <- getWeightsBifurcation(dataset, crv)
   trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
   gamList <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
                     nknots = 4)
