@@ -3,3 +3,5 @@ simulation/sim2_dyntoy_bifurcating_4/datasets
 simulation/sim2_dyntoy_multifurcating_4/datasets
 simulation/sim2_dyngen_cycle_72/datasets
 simulation/time/bigDyntoyDataset.rds
+.Rproj.user
+tradeSeqPaper.Rproj

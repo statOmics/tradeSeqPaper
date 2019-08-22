@@ -34,6 +34,7 @@ for (size in 2:4) {
   mem_benchmarks[[size - 1]] <- mem_benchmark
 }
 
+# Plots ----
 time_benchmarks <- do.call("rbind", time_benchmarks) %>% as.data.frame()
 time_benchmarks <- time_benchmarks %>% add_row("expr" = "ImpulseDE2",
                                                "time" = duration(3.5, units = "hours"),
@@ -67,3 +68,30 @@ p2 <- ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
 p <- plot_grid(p1, p2, rel_widths = c(0.4, 0.6), rel_heights = c(0.8, 0.8))
 ggsave(filename = here::here('simulation', 'time', 'figures', 'benchmark.pdf'),
        plot = p)
+
+# Test benchmarks ----
+test_benchmarks <- list()
+for (size in 2:4) {
+  ## Benchmark time ----
+  test_benchmark <- read.table(
+    file = here::here("simulation", "time", "data",
+                      paste0(size, "-time-tests.txt")))
+  test_benchmark <- test_benchmark %>%
+    mutate(expr = case_when(str_detect(expr, "diffEndTest") ~ "diffEndTest",
+                            str_detect(expr, "patternTest") ~ "patternTest",
+                            str_detect(expr, "earlyDETest") ~ "earlyDETest",
+                            str_detect(expr, "associationTest") ~ "associationTest",
+                            str_detect(expr, "startVsEndTest") ~ "startVsEndTest"),
+           time = duration(round(time / 60^5,2), units = "seconds")) %>%
+    mutate(n = 10^size)
+  test_benchmarks[[size - 1]] <- test_benchmark
+}
+test_benchmarks <- do.call("rbind", test_benchmarks) %>% as.data.frame()
+ggplot(test_benchmarks, aes(x = n, y = as.numeric(time) / 60,
+                            group = interaction(expr, n), col = expr)) +
+  geom_boxplot() +
+  # geom_line() +
+  theme_classic() +
+  labs(x = "number of cells", y = "time (minutes)", col = 'method') +
+  scale_x_log10()
+ggsave(here::here('simulation', 'time', 'figures', 'test.pdf'))
