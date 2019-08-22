@@ -1,5 +1,5 @@
-library(monocle)
-library(DESeq2)
+# library(monocle)
+# library(DESeq2)
 library(RColorBrewer)
 library(mgcv)
 library(slingshot)
