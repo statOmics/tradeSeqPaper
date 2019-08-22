@@ -1,17 +1,19 @@
-.libPaths("/accounts/campus/hector.rouxdebezieux/R/x86_64-pc-linux-gnu-library/3.5")
+library(princurve)
 library(RColorBrewer)
 library(mgcv)
-library(slingshot)
-library(tradeSeq)
+library(BiocParallel)
+library(doParallel)
 library(microbenchmark)
 library(here)
+library(tidyverse)
+.libPaths("/accounts/campus/hector.rouxdebezieux/R/x86_64-pc-linux-gnu-library/3.5")
+library(slingshot)
+library(tradeSeq)
 library(rafalib)
 library(dyno)
 library(dyntoy)
-library(tidyverse)
+
 library(wesanderson)
-library(BiocParallel)
-library(doParallel)
 
 ## Pre-process ----
 NCORES <- 2
