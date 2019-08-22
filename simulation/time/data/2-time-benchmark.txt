@@ -1,14 +1,14 @@
 "expr" "time"
-"1" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 471175583487
+"1" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 480205674846
 "2" "suppressWarnings(edgeR())" 11255922649
 "3" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 133535489864
-"4" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 469517847880
+"4" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 482795119212
 "5" "suppressWarnings(edgeR())" 11180255654
-"6" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 474116680185
+"6" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 465637664175
 "7" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 133186451982
-"8" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 474588750011
-"9" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 475096779281
-"10" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 474724364552
+"8" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 499771784239
+"9" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 506510006818
+"10" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 474465798926
 "11" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27406076082
 "12" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 133321897250
 "13" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27808531093
@@ -26,15 +26,15 @@
 "25" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 131310660374
 "26" "suppressWarnings(edgeR())" 11251923623
 "27" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 129913839929
-"28" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 471412300260
+"28" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 509979928327
 "29" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27902817095
-"30" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 475223214741
+"30" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 501338996846
 "31" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 133835507632
 "32" "suppressWarnings(edgeR())" 11207323055
 "33" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27664795646
 "34" "suppressWarnings(edgeR())" 11279340748
-"35" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 476329818512
-"36" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights))" 475406137211
+"35" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 472289217955
+"36" "suppressWarnings(fitGAM(as.matrix(counts), pseudotime = trueT,      cellWeights = trueWeights, nknots = 4))" 500385142654
 "37" "suppressWarnings(BEAM_kvdb(cds, cores = 1))" 132294888219
 "38" "suppressWarnings(edgeR())" 11229896293
 "39" "suppressWarnings(edgeR())" 11107289027

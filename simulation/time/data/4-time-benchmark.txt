@@ -1,7 +1,7 @@
 "expr" "time"
 "1" "BEAM_kvdb(cds, cores = 1)" 714542702872
 "2" "edgeR()" 1186613201180
-"3" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)" 3701408209266
-"4" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights)" 3701373558731
+"3" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights, nknots = 4)" 2379476995200
+"4" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights, nknots = 4)" 2456740886400
 "5" "BEAM_kvdb(cds, cores = 1)" 703067973780
 "6" "edgeR()" 1168564634927
