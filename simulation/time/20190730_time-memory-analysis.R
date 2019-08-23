@@ -97,4 +97,5 @@ ggplot(test_benchmarks, aes(x = n, y = as.numeric(time) / 60,
   theme_classic() +
   labs(x = "number of cells", y = "time (minutes)", col = 'Tests') +
   scale_x_log10()
-ggsave(here::here('simulation', 'time', 'figures', 'test.pdf'))
+ggsave(here::here('simulation', 'time', 'figures', 'test.pdf'),
+       width = 4.5, height = 3)
