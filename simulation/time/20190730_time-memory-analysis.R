@@ -38,12 +38,15 @@ for (size in 2:4) {
 time_benchmarks <- do.call("rbind", time_benchmarks) %>% as.data.frame()
 time_benchmarks <- time_benchmarks %>% add_row("expr" = "ImpulseDE2",
                                                "time" = duration(3.5, units = "hours"),
-                                               n = 100)
+                                               n = 100) %>%
+  group_by(expr, n) %>%
+  summarise(time = mean(time))
 mem_benchmarks <- do.call("rbind", mem_benchmarks) %>% as.data.frame() %>%
   add_row(mem = 148.2,
           "method" = "ImpulseDE2",
           n = 100) %>%
-  identity()
+  group_by(method, n) %>%
+  summarise(mem = mean(mem))
 
 cols <- c("#4292C6", "#e41a1c", "#e78ac3", "#ff7f00", "darkgoldenrod1")
 names(cols) <- c("tradeSeq", "BEAM", "GPfates", "edgeR", "ImpulseDE2")
@@ -62,12 +65,12 @@ p2 <- ggplot(mem_benchmarks, aes(x = n, y = mem / 10 ^ 3,
   geom_point(size = 5) +
   theme_classic() +
   geom_line() +
-  labs(x = "number of cells", y = "memory (kB)") +
+  labs(x = "number of cells", y = "memory (MB)") +
   scale_x_log10() +
   scale_color_manual(values = cols, breaks = names(cols))
-p <- plot_grid(p1, p2, rel_widths = c(0.4, 0.6), rel_heights = c(0.8, 0.8))
+p <- plot_grid(p1, p2, rel_widths = c(0.45, 0.6), rel_heights = c(0.8, 0.8))
 ggsave(filename = here::here('simulation', 'time', 'figures', 'benchmark.pdf'),
-       plot = p)
+       plot = p, width = 8, height = 4)
 
 # Test benchmarks ----
 test_benchmarks <- list()
@@ -92,6 +95,6 @@ ggplot(test_benchmarks, aes(x = n, y = as.numeric(time) / 60,
   geom_boxplot() +
   # geom_line() +
   theme_classic() +
-  labs(x = "number of cells", y = "time (minutes)", col = 'method') +
+  labs(x = "number of cells", y = "time (minutes)", col = 'Tests') +
   scale_x_log10()
 ggsave(here::here('simulation', 'time', 'figures', 'test.pdf'))

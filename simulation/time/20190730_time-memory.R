@@ -72,84 +72,84 @@ for (size in 2:4) {
   crv <- getCurves(lin)
   
   # ## Monocle BEAM analysis ----
-  # print("...BEAM")
-  # ### Monocle 2 BEAM analysis
+  print("...BEAM")
+  ### Monocle 2 BEAM analysis
   trueWeights <- getWeightsBifurcation(dataset, crv)
-  # featureInfo <- data.frame(gene_short_name = rownames(counts))
-  # rownames(featureInfo) <- rownames(counts)
-  # fd <- new("AnnotatedDataFrame", featureInfo)
-  # cds <- newCellDataSet(cellData = normCounts, featureData = fd, 
-  #                       expressionFamily = negbinomial.size())
-  # cds <- estimateSizeFactors(cds)
-  # cds <- estimateDispersions(cds)
-  # cds <- reduceDimension(cds, reduction_method = "ICA")
-  # cds <- orderCells(cds)
-  # set.seed(11)
-  # branch <- rep(NA, ncol(counts))
-  # branch[trueWeights[, 1] == 1] <- "A"
-  # branch[trueWeights[, 2] == 1] <- "B"
-  # branch[is.na(branch)] <- c("A", "B")[sample(1:2, size = sum(is.na(branch)), replace = TRUE)]
-  # phenoData(cds)$Branch <- as.factor(branch)
-  # phenoData(cds)$original_cell_id <- colnames(counts)
-  # phenoData(cds)$Pseudotime <- truePseudotime
-  
+  featureInfo <- data.frame(gene_short_name = rownames(counts))
+  rownames(featureInfo) <- rownames(counts)
+  fd <- new("AnnotatedDataFrame", featureInfo)
+  cds <- newCellDataSet(cellData = normCounts, featureData = fd,
+                        expressionFamily = negbinomial.size())
+  cds <- estimateSizeFactors(cds)
+  cds <- estimateDispersions(cds)
+  cds <- reduceDimension(cds, reduction_method = "ICA")
+  cds <- orderCells(cds)
+  set.seed(11)
+  branch <- rep(NA, ncol(counts))
+  branch[trueWeights[, 1] == 1] <- "A"
+  branch[trueWeights[, 2] == 1] <- "B"
+  branch[is.na(branch)] <- c("A", "B")[sample(1:2, size = sum(is.na(branch)), replace = TRUE)]
+  phenoData(cds)$Branch <- as.factor(branch)
+  phenoData(cds)$original_cell_id <- colnames(counts)
+  phenoData(cds)$Pseudotime <- truePseudotime
+
   ## tradeSeq  ----
   ### tradeSeq: fit smoothers on truth data
   trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow = FALSE)
   print("...tradeSeq")  
   # ## edgeR ----
-  # print("...edgeR")
-  # edgeR <- function(){
-  #   clF <- as.factor(cl)
-  #   design <- model.matrix(~clF)
-  #   d <- DGEList(counts)
-  #   d <- calcNormFactors(d)
-  #   d <- estimateDisp(d, design)
-  #   fit <- glmFit(d, design)
-  #   L <- matrix(0, nrow = ncol(fit$coefficients), ncol = 1)
-  #   rownames(L) <- colnames(fit$coefficients)
-  #   endClusters <- c(2, 4)
-  #   if (1 %in% endClusters) {
-  #     not1Cluster <- endClusters[!endClusters == 1]
-  #     L[not1Cluster,1] <- 1
-  #   } else {
-  #     L[endClusters,1] <- c(1,-1)
-  #   }
-  #   lrt <- glmLRT(fit, contrast = L)
-  # }
+  print("...edgeR")
+  edgeR <- function(){
+    clF <- as.factor(cl)
+    design <- model.matrix(~clF)
+    d <- DGEList(counts)
+    d <- calcNormFactors(d)
+    d <- estimateDisp(d, design)
+    fit <- glmFit(d, design)
+    L <- matrix(0, nrow = ncol(fit$coefficients), ncol = 1)
+    rownames(L) <- colnames(fit$coefficients)
+    endClusters <- c(2, 4)
+    if (1 %in% endClusters) {
+      not1Cluster <- endClusters[!endClusters == 1]
+      L[not1Cluster,1] <- 1
+    } else {
+      L[endClusters,1] <- c(1,-1)
+    }
+    lrt <- glmLRT(fit, contrast = L)
+  }
   
   # ## GPFates ----
-  # print("...GPfates")
-  # logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
-  # sampleInfo <- data.frame(global_pseudotime = truePseudotime)
-  # rownames(sampleInfo) <- colnames(counts)
-  # write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
-  #             col.names = TRUE, quote = FALSE)
-  # write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
-  #             col.names = TRUE, quote = FALSE)
-  # system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
-  #        ignore.stdout = TRUE)
+  print("...GPfates")
+  logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
+  sampleInfo <- data.frame(global_pseudotime = truePseudotime)
+  rownames(sampleInfo) <- colnames(counts)
+  write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
+              col.names = TRUE, quote = FALSE)
+  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
+         ignore.stdout = TRUE)
   
   ## Benchmark time ----
   print("...benchmark")
   time_benchmark <- microbenchmark(
     fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
            nknots = 4),
-    # BEAM_kvdb(cds, cores = 1),
-    # edgeR(),
-    # system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
-    #        ignore.stdout = TRUE),
+    BEAM_kvdb(cds, cores = 1),
+    edgeR(),
+    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
+           ignore.stdout = TRUE),
     times = ifelse(size == 2, 10, 2)
   )
-  # write.table(x = time_benchmark,
-  #             file = here("simulation", "time", "data",
-  #                         paste0(size, "-time-benchmark.txt")))
+  write.table(x = time_benchmark,
+              file = here("simulation", "time", "data",
+                          paste0(size, "-time-benchmark.txt")))
   print(time_benchmark)
   
   ## Benchmark memory ----
-  # mem <- rep(0, 4)
-  # names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
-  # 
+  mem <- rep(0, 4)
+  names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
+
   ### tradeSeq
   print("...tradeSeq memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
@@ -157,55 +157,55 @@ for (size in 2:4) {
   test <- fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
                  verbose = FALSE)
   Rprof(filename = 'NULL')
-  # mem["tradeSeq"] <- 
+  mem["tradeSeq"] <-
     summaryRprof(
     filename = here::here("simulation", "time", "Rprof.out"),
     memory = "both")$by.total[, "mem.total"] %>% 
     max()
   
-  # ### BEAM
-  # print("...BEAM memory")
-  # Rprof(filename = here::here("simulation", "time","Rprof.out"),
-  #       memory.profiling = TRUE)
-  # test <- BEAM_kvdb(cds, cores = 1)
-  # Rprof(filename = 'NULL')
-  # mem["BEAM"] <- summaryRprof(
-  #   filename = here::here("simulation", "time", "Rprof.out"),
-  #   memory = "both")$by.total[, "mem.total"] %>% 
-  #   max()
-  # 
-  # ### edgeR
-  # print("...edgeR memory")
-  # Rprof(filename = here::here("simulation", "time","Rprof.out"),
-  #       memory.profiling = TRUE)
-  # test <- edgeR()
-  # Rprof(filename = 'NULL')
-  # mem["edgeR"] <- summaryRprof(
-  #   filename = here::here("simulation", "time", "Rprof.out"),
-  #   memory = "both")$by.total[, "mem.total"] %>% 
-  #   max()
-  # 
-  # write.table(x = mem,file = here("simulation", "time",
-  #                                 paste0(size, "-mem-benchmark.txt")))
-  # 
-  # ### GPfates
-  # print("...GPFates memory")
-  # memGPfatesAll <-
-  #   system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-  #          intern = TRUE, ignore.stdout = FALSE)
-  # mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
-  # mem1 <- str_subset(mem1, "MiB")
-  # mem1 <- str_remove(mem1, " MiB")
-  # print(max(mem1))
-  # mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
-  # 
-  # ### All together
-  # write.table(x = mem,file = here("simulation", "time", "data", 
-  #                                 paste0(size, "-mem-benchmark.txt")))
+  ### BEAM
+  print("...BEAM memory")
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- BEAM_kvdb(cds, cores = 1)
+  Rprof(filename = 'NULL')
+  mem["BEAM"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>%
+    max()
+
+  ### edgeR
+  print("...edgeR memory")
+  Rprof(filename = here::here("simulation", "time","Rprof.out"),
+        memory.profiling = TRUE)
+  test <- edgeR()
+  Rprof(filename = 'NULL')
+  mem["edgeR"] <- summaryRprof(
+    filename = here::here("simulation", "time", "Rprof.out"),
+    memory = "both")$by.total[, "mem.total"] %>%
+    max()
+
+  write.table(x = mem,file = here("simulation", "time",
+                                  paste0(size, "-mem-benchmark.txt")))
+
+  ### GPfates
+  print("...GPFates memory")
+  memGPfatesAll <-
+    system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+           intern = TRUE, ignore.stdout = FALSE)
+  mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
+  mem1 <- str_subset(mem1, "MiB")
+  mem1 <- str_remove(mem1, " MiB")
+  print(max(mem1))
+  mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
+
+  ### All together
+  write.table(x = mem,file = here("simulation", "time", "data",
+                                  paste0(size, "-mem-benchmark.txt")))
 }
 
 file.remove(here::here("simulation", "time", "Rprof.out"))
 file.remove(here::here("simulation", "time", "Rprof.out"))
-# file.remove(here::here("simulation", "time", "timeBenchLogCpm.txt"))
-# file.remove(here::here("simulation", "time", "timeBenchSampleInfo.txt"))
-# file.remove(here::here("simulation", "time", "m.pkl"))
+file.remove(here::here("simulation", "time", "timeBenchLogCpm.txt"))
+file.remove(here::here("simulation", "time", "timeBenchSampleInfo.txt"))
+file.remove(here::here("simulation", "time", "m.pkl"))

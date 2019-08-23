@@ -115,7 +115,8 @@ df <- runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
 Rprof(filename = NULL)
 print(
   summaryRprof(
-    filename = here::here("simulation", "time", "small-ImpulseDE-memory.Rprof"),
+    filename = here::here(
+      "simulation", "time", "data", "small-ImpulseDE-memory.Rprof"),
     memory = "both")$by.total[, "mem.total"] %>% 
     max(na.rm = TRUE)
   )

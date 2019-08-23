@@ -1,0 +1,56 @@
+"expr" "time" "n"
+"1" "tradeSeq" 617.55s (~10.29 minutes) 100
+"2" "edgeR" 14.48s 100
+"3" "BEAM" 171.73s (~2.86 minutes) 100
+"4" "tradeSeq" 620.88s (~10.35 minutes) 100
+"5" "edgeR" 14.38s 100
+"6" "tradeSeq" 598.81s (~9.98 minutes) 100
+"7" "BEAM" 171.28s (~2.85 minutes) 100
+"8" "tradeSeq" 642.71s (~10.71 minutes) 100
+"9" "tradeSeq" 651.38s (~10.86 minutes) 100
+"10" "tradeSeq" 610.17s (~10.17 minutes) 100
+"11" "GPfates" 35.24s 100
+"12" "BEAM" 171.45s (~2.86 minutes) 100
+"13" "GPfates" 35.76s 100
+"14" "BEAM" 173.16s (~2.89 minutes) 100
+"15" "BEAM" 166.95s (~2.78 minutes) 100
+"16" "edgeR" 14.51s 100
+"17" "edgeR" 14.33s 100
+"18" "GPfates" 35.8s 100
+"19" "edgeR" 15s 100
+"20" "BEAM" 168.03s (~2.8 minutes) 100
+"21" "GPfates" 35.48s 100
+"22" "GPfates" 34.75s 100
+"23" "GPfates" 34.69s 100
+"24" "GPfates" 35.66s 100
+"25" "BEAM" 168.87s (~2.81 minutes) 100
+"26" "edgeR" 14.47s 100
+"27" "BEAM" 167.07s (~2.78 minutes) 100
+"28" "tradeSeq" 655.84s (~10.93 minutes) 100
+"29" "GPfates" 35.88s 100
+"30" "tradeSeq" 644.73s (~10.75 minutes) 100
+"31" "BEAM" 172.11s (~2.87 minutes) 100
+"32" "edgeR" 14.41s 100
+"33" "GPfates" 35.58s 100
+"34" "edgeR" 14.51s 100
+"35" "tradeSeq" 607.37s (~10.12 minutes) 100
+"36" "tradeSeq" 643.5s (~10.72 minutes) 100
+"37" "BEAM" 170.13s (~2.84 minutes) 100
+"38" "edgeR" 14.44s 100
+"39" "edgeR" 14.28s 100
+"40" "GPfates" 35.49s 100
+"41" "edgeR" 135.87s (~2.26 minutes) 1000
+"42" "edgeR" 134.14s (~2.24 minutes) 1000
+"43" "BEAM" 239.73s (~4 minutes) 1000
+"44" "BEAM" 239.6s (~3.99 minutes) 1000
+"45" "tradeSeq" 677.96s (~11.3 minutes) 1000
+"46" "tradeSeq" 697.68s (~11.63 minutes) 1000
+"47" "GPfates" 6482s (~1.8 hours) 1000
+"48" "GPfates" 6482.01s (~1.8 hours) 1000
+"49" "BEAM" 918.91s (~15.32 minutes) 10000
+"50" "edgeR" 1525.99s (~25.43 minutes) 10000
+"51" "tradeSeq" 3060.03s (~51 minutes) 10000
+"52" "tradeSeq" 3159.39s (~52.66 minutes) 10000
+"53" "BEAM" 904.15s (~15.07 minutes) 10000
+"54" "edgeR" 1502.78s (~25.05 minutes) 10000
+"55" "ImpulseDE2" 12600s (~3.5 hours) 100
