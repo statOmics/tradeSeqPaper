@@ -120,36 +120,54 @@ for (size in 2:4) {
   
   # ## GPFates ----
   print("...GPfates")
-  logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
-  sampleInfo <- data.frame(global_pseudotime = truePseudotime)
-  rownames(sampleInfo) <- colnames(counts)
-  write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
-              col.names = TRUE, quote = FALSE)
-  write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
-              col.names = TRUE, quote = FALSE)
-  system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
-         ignore.stdout = TRUE)
+  if (size < 4) {
+    logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
+    sampleInfo <- data.frame(global_pseudotime = truePseudotime)
+    rownames(sampleInfo) <- colnames(counts)
+    write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
+                col.names = TRUE, quote = FALSE)
+    write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
+                col.names = TRUE, quote = FALSE)
+    system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
+           ignore.stdout = TRUE)
+  }
   
   ## Benchmark time ----
   print("...benchmark")
-  time_benchmark <- microbenchmark(
-    fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
-           nknots = 4),
-    BEAM_kvdb(cds, cores = 1),
-    edgeR(),
-    system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
-           ignore.stdout = TRUE),
-    times = ifelse(size == 2, 10, 2)
-  )
+  if (size < 4) {
+    time_benchmark <- microbenchmark(
+      fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
+             nknots = 4),
+      BEAM_kvdb(cds, cores = 1),
+      edgeR(),
+      system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
+             ignore.stdout = TRUE),
+      times = ifelse(size == 2, 10, 2)
+    )  
+  } else {
+    time_benchmark <- microbenchmark(
+      fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,
+             nknots = 4),
+      BEAM_kvdb(cds, cores = 1),
+      edgeR(),
+      times = ifelse(size == 2, 10, 2)
+    )
+  }
+  
   write.table(x = time_benchmark,
               file = here("simulation", "time", "data",
                           paste0(size, "-time-benchmark.txt")))
   print(time_benchmark)
   
   ## Benchmark memory ----
-  mem <- rep(0, 4)
-  names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
-
+  if (size < 4) {
+    mem <- rep(0, 4)
+    names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
+  } else {
+    mem <- rep(0, 3)
+    names(mem) <- c("tradeSeq", "BEAM", "edgeR")
+  }
+  
   ### tradeSeq
   print("...tradeSeq memory")
   Rprof(filename = here::here("simulation", "time","Rprof.out"),
@@ -190,15 +208,17 @@ for (size in 2:4) {
 
   ### GPfates
   print("...GPFates memory")
-  memGPfatesAll <-
-    system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-           intern = TRUE, ignore.stdout = FALSE)
-  mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
-  mem1 <- str_subset(mem1, "MiB")
-  mem1 <- str_remove(mem1, " MiB")
-  print(max(mem1))
-  mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
-
+  if (size < 4) {
+    memGPfatesAll <-
+      system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+             intern = TRUE, ignore.stdout = FALSE)
+    mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
+    mem1 <- str_subset(mem1, "MiB")
+    mem1 <- str_remove(mem1, " MiB")
+    print(max(mem1))
+    mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
+  }
+  
   ### All together
   write.table(x = mem,file = here("simulation", "time", "data",
                                   paste0(size, "-mem-benchmark.txt")))
