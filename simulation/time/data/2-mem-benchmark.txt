@@ -1,5 +1,4 @@
 "x"
-"tradeSeq" 92008.1
-"BEAM" 27214.6
-"edgeR" 791.5
-"GPfates" 146700
+"tradeSeq" 67855.7
+"BEAM" 25581.7
+"edgeR" 749.4

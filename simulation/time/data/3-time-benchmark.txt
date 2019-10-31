@@ -1,9 +1,7 @@
 "expr" "time"
-"1" "edgeR()" 105650493894
-"2" "edgeR()" 104307789887
-"3" "BEAM_kvdb(cds, cores = 1)" 186415216701
-"4" "BEAM_kvdb(cds, cores = 1)" 186316653622
-"5" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights, nknots = 4)" 527180451840
-"6" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights, nknots = 4)" 542518767360
-"7" "system('python3 ./20190806_analyzeGPfatesTimeBenchmark.py', ignore.stdout = TRUE)" 5040403000000
-"8" "system('python3 ./20190806_analyzeGPfatesTimeBenchmark.py', ignore.stdout = TRUE)" 5040409000000
+"1" "edgeR()" 126980512014
+"2" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,      nknots = 4)" 602631730994
+"3" "BEAM_kvdb(cds, cores = 1)" 209297347076
+"4" "fitGAM(as.matrix(counts), pseudotime = trueT, cellWeights = trueWeights,      nknots = 4)" 595403439622
+"5" "edgeR()" 127513686711
+"6" "BEAM_kvdb(cds, cores = 1)" 208854618066

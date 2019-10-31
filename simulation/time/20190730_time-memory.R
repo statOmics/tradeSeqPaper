@@ -6,7 +6,6 @@ library(doParallel)
 library(microbenchmark)
 library(here)
 library(tidyverse)
-.libPaths("/accounts/campus/hector.rouxdebezieux/R/x86_64-pc-linux-gnu-library/3.5")
 library(slingshot)
 library(DESeq2)
 library(tradeSeq)
@@ -14,11 +13,10 @@ library(rafalib)
 library(dyno)
 library(dyntoy)
 library(monocle)
+library(edgeR)
 library(wesanderson)
 
-
 ## Pre-process ----
-NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type = "continuous"))
 source(here::here("simulation", "time", "20190611_helper.R"))
 set.seed(87657)
@@ -36,7 +34,8 @@ FQnorm <- function(counts) {
 
 ## datasets ----
 
-for (size in 2:4) {
+# for (size in 2:4) {
+for (size in 4:4) {
   ## Generate dataset ----
   print(paste0("dataset of size", 10^size))
   dataset <- readRDS(
@@ -60,7 +59,7 @@ for (size in 2:4) {
   ## Running slingshot ----
   print("...slingshot")
   ## dim red
-  pca <- prcomp(log1p(t(normCounts)), scale. = FALSE)
+  pca <- prcomp(log1p(t(normCounts)), scale. = FALSE, rank. = 4)
   rd <- pca$x[, 1:4]
   ## cluster
   cl <- as.factor(gid$group_id)
@@ -119,18 +118,18 @@ for (size in 2:4) {
   }
   
   # ## GPFates ----
-  print("...GPfates")
-  if (size < 4) {
-    logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
-    sampleInfo <- data.frame(global_pseudotime = truePseudotime)
-    rownames(sampleInfo) <- colnames(counts)
-    write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
-                col.names = TRUE, quote = FALSE)
-    write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
-                col.names = TRUE, quote = FALSE)
-    system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
-           ignore.stdout = TRUE)
-  }
+#   print("...GPfates")
+#   if (size < 4) {
+#     logCpm <- edgeR::cpm(normCounts, prior.count = .125, log = TRUE)
+#     sampleInfo <- data.frame(global_pseudotime = truePseudotime)
+#     rownames(sampleInfo) <- colnames(counts)
+#     write.table(logCpm, file = "./timeBenchLogCpm.txt", row.names = TRUE,
+#                 col.names = TRUE, quote = FALSE)
+#     write.table(sampleInfo, file = "./timeBenchSampleInfo.txt", row.names = TRUE,
+#                 col.names = TRUE, quote = FALSE)
+#     system("python3 ./20190806_preprocessGPfatesTimeMemBenchmark.py",
+#            ignore.stdout = TRUE)
+#   }
   
   ## Benchmark time ----
   print("...benchmark")
@@ -140,8 +139,8 @@ for (size in 2:4) {
              nknots = 4),
       BEAM_kvdb(cds, cores = 1),
       edgeR(),
-      system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
-             ignore.stdout = TRUE),
+#       system("python3 ./20190806_analyzeGPfatesTimeBenchmark.py",
+#              ignore.stdout = TRUE),
       times = ifelse(size == 2, 10, 2)
     )  
   } else {
@@ -160,13 +159,13 @@ for (size in 2:4) {
   print(time_benchmark)
   
   ## Benchmark memory ----
-  if (size < 4) {
-    mem <- rep(0, 4)
-    names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
-  } else {
+#   if (size < 4) {
+#     mem <- rep(0, 4)
+#     names(mem) <- c("tradeSeq", "BEAM", "edgeR", "GPFates")
+#   } else {
     mem <- rep(0, 3)
     names(mem) <- c("tradeSeq", "BEAM", "edgeR")
-  }
+#   }
   
   ### tradeSeq
   print("...tradeSeq memory")
@@ -203,21 +202,21 @@ for (size in 2:4) {
     memory = "both")$by.total[, "mem.total"] %>%
     max()
 
-  write.table(x = mem,file = here("simulation", "time",
+  write.table(x = mem,file = here("simulation", "time", "data", 
                                   paste0(size, "-mem-benchmark.txt")))
 
   ### GPfates
-  print("...GPFates memory")
-  if (size < 4) {
-    memGPfatesAll <-
-      system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
-             intern = TRUE, ignore.stdout = FALSE)
-    mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
-    mem1 <- str_subset(mem1, "MiB")
-    mem1 <- str_remove(mem1, " MiB")
-    print(max(mem1))
-    mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
-  }
+#   print("...GPFates memory")
+#   if (size < 4) {
+#     memGPfatesAll <-
+#       system("python3 ./20190806_analyzeGPfatesMemoryBenchmark.py",
+#              intern = TRUE, ignore.stdout = FALSE)
+#     mem1 <- sapply(memGPfatesAll, strsplit, split = " [ ]+") %>% unlist()
+#     mem1 <- str_subset(mem1, "MiB")
+#     mem1 <- str_remove(mem1, " MiB")
+#     print(max(mem1))
+#     mem["GPFates"] <- max(as.numeric(mem1), na.rm = TRUE)
+#   }
   
   ### All together
   write.table(x = mem,file = here("simulation", "time", "data",

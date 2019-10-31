@@ -69,7 +69,7 @@ trueT <- matrix(truePseudotime, nrow = length(truePseudotime), ncol = 2, byrow =
 
 gamModels <- fitGAM(as.matrix(counts)[1:10,], pseudotime = trueT,
                     cellWeights = trueWeights)
-m <- gamList[[1]]
+m <- gamModels[[1]]
 branch <- rep(NA, ncol(counts))
 time <- rep(NA, ncol(counts))
 branch[m$model$l1 == 1] <- "A"

@@ -1,51 +1,51 @@
 "expr" "time"
-"1" "associationTest(gamList)" 2895943378
-"2" "patternTest(gamList)" 17832186782
-"3" "diffEndTest(gamList)" 2801495507
-"4" "earlyDETest(gamList, knots = c(1, 2))" 14398557863
-"5" "startVsEndTest(gamList)" 2988472522
-"6" "associationTest(gamList)" 3046379415
-"7" "patternTest(gamList)" 15900045665
-"8" "startVsEndTest(gamList)" 2271793136
-"9" "diffEndTest(gamList)" 2269150314
-"10" "startVsEndTest(gamList)" 3120890498
-"11" "earlyDETest(gamList, knots = c(1, 2))" 14955842108
-"12" "startVsEndTest(gamList)" 2832702999
-"13" "associationTest(gamList)" 2913126295
-"14" "patternTest(gamList)" 14718388537
-"15" "diffEndTest(gamList)" 2969997839
-"16" "earlyDETest(gamList, knots = c(1, 2))" 15685100353
-"17" "diffEndTest(gamList)" 2555861510
-"18" "associationTest(gamList)" 2986124113
-"19" "associationTest(gamList)" 2946257899
-"20" "earlyDETest(gamList, knots = c(1, 2))" 14460841146
-"21" "diffEndTest(gamList)" 2731171068
-"22" "earlyDETest(gamList, knots = c(1, 2))" 17322898184
-"23" "startVsEndTest(gamList)" 2952722973
-"24" "startVsEndTest(gamList)" 2864530019
-"25" "patternTest(gamList)" 14254907543
-"26" "startVsEndTest(gamList)" 2832619554
-"27" "startVsEndTest(gamList)" 3103606749
-"28" "diffEndTest(gamList)" 4472210685
-"29" "diffEndTest(gamList)" 2844585398
-"30" "earlyDETest(gamList, knots = c(1, 2))" 16135704410
-"31" "associationTest(gamList)" 2910399439
-"32" "earlyDETest(gamList, knots = c(1, 2))" 18850976878
-"33" "patternTest(gamList)" 17156935701
-"34" "diffEndTest(gamList)" 2784161802
-"35" "patternTest(gamList)" 16014961265
-"36" "associationTest(gamList)" 2909114507
-"37" "associationTest(gamList)" 2975603876
-"38" "startVsEndTest(gamList)" 3079115388
-"39" "associationTest(gamList)" 2798431487
-"40" "patternTest(gamList)" 14557463948
-"41" "patternTest(gamList)" 16045511517
-"42" "earlyDETest(gamList, knots = c(1, 2))" 14378970872
-"43" "diffEndTest(gamList)" 2961195608
-"44" "earlyDETest(gamList, knots = c(1, 2))" 14477706333
-"45" "earlyDETest(gamList, knots = c(1, 2))" 16059952301
-"46" "patternTest(gamList)" 14590087530
-"47" "diffEndTest(gamList)" 2634946922
-"48" "associationTest(gamList)" 2863810366
-"49" "startVsEndTest(gamList)" 2972357679
-"50" "patternTest(gamList)" 15671592075
+"1" "associationTest(gamList)" 1951532480
+"2" "earlyDETest(gamList, knots = c(1, 2))" 11630773160
+"3" "startVsEndTest(gamList)" 1961946245
+"4" "earlyDETest(gamList, knots = c(1, 2))" 11383827152
+"5" "diffEndTest(gamList)" 1848629992
+"6" "patternTest(gamList)" 12375312402
+"7" "patternTest(gamList)" 12567433984
+"8" "startVsEndTest(gamList)" 2090461759
+"9" "startVsEndTest(gamList)" 2145363748
+"10" "diffEndTest(gamList)" 2060896735
+"11" "patternTest(gamList)" 13299990867
+"12" "diffEndTest(gamList)" 1851428893
+"13" "associationTest(gamList)" 1934903747
+"14" "diffEndTest(gamList)" 2128385479
+"15" "earlyDETest(gamList, knots = c(1, 2))" 14278038158
+"16" "patternTest(gamList)" 14062265849
+"17" "associationTest(gamList)" 1937288101
+"18" "earlyDETest(gamList, knots = c(1, 2))" 12929958396
+"19" "associationTest(gamList)" 2205933921
+"20" "earlyDETest(gamList, knots = c(1, 2))" 13861705985
+"21" "patternTest(gamList)" 12403700258
+"22" "patternTest(gamList)" 11502856610
+"23" "startVsEndTest(gamList)" 1954003141
+"24" "associationTest(gamList)" 1990105847
+"25" "startVsEndTest(gamList)" 2022734837
+"26" "startVsEndTest(gamList)" 1928888618
+"27" "diffEndTest(gamList)" 1910893817
+"28" "earlyDETest(gamList, knots = c(1, 2))" 13291686559
+"29" "associationTest(gamList)" 2096966108
+"30" "patternTest(gamList)" 12618441336
+"31" "earlyDETest(gamList, knots = c(1, 2))" 14037443979
+"32" "patternTest(gamList)" 13381452490
+"33" "diffEndTest(gamList)" 2058817521
+"34" "associationTest(gamList)" 2152027969
+"35" "patternTest(gamList)" 16240294721
+"36" "diffEndTest(gamList)" 2164838813
+"37" "diffEndTest(gamList)" 2366282717
+"38" "startVsEndTest(gamList)" 2459870722
+"39" "associationTest(gamList)" 2517600903
+"40" "earlyDETest(gamList, knots = c(1, 2))" 16581827047
+"41" "diffEndTest(gamList)" 2247581768
+"42" "startVsEndTest(gamList)" 2270284685
+"43" "startVsEndTest(gamList)" 2353352783
+"44" "startVsEndTest(gamList)" 2177778255
+"45" "associationTest(gamList)" 2131985014
+"46" "patternTest(gamList)" 14857046561
+"47" "associationTest(gamList)" 2125583861
+"48" "earlyDETest(gamList, knots = c(1, 2))" 12384425345
+"49" "diffEndTest(gamList)" 1889166315
+"50" "earlyDETest(gamList, knots = c(1, 2))" 13417137689
