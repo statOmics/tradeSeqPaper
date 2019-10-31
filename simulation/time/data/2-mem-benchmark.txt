@@ -2,3 +2,4 @@
 "tradeSeq" 67855.7
 "BEAM" 25581.7
 "edgeR" 749.4
+"GPfates" 146700

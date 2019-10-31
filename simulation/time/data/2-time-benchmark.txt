@@ -29,3 +29,13 @@
 "28" "BEAM_kvdb(cds, cores = 1)" 144322602676
 "29" "BEAM_kvdb(cds, cores = 1)" 144516286409
 "30" "edgeR()" 13189959446
+"31" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27406076082
+"32" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27808531093
+"33" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27902817095
+"34" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27664795646
+"35" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27596592176
+"36" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27838094167
+"37" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27585548762
+"38" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27022062025
+"39" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 26976603827
+"40" "system(\"python3 ./20190806_analyzeGPfatesTimeBenchmark.py\", ignore.stdout = TRUE)" 27729390092
