@@ -1,4 +1,4 @@
 "x"
-"tradeSeq" 1250341.3
+"tradeSeq" 1091894
 "BEAM" 367738.5
 "edgeR" 65567.6
