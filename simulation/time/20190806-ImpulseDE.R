@@ -97,22 +97,12 @@ vecDispersionsInv <- mcols(dds)$dispersion
 vecDispersions <- 1 / vecDispersionsInv
 names(vecDispersions) <- rownames(dds)
 
-# time_benchmark <- microbenchmark(
-#   runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
-#                 boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
-#                 vecDispersionsExternal = vecDispersions, scaNProc = 2),
-#   times = 10L
-# )
-# 
-# write.table(x = time_benchmark,
-#             file = here::here("simulation", "time", "ImpulseDE-time.txt"))
-
 Rprof(here::here("simulation", "time", "small-ImpulseDE-memory.Rprof"),
       memory.profiling = TRUE)
 print(system.time(
 df <- runImpulseDE2(matCountData = round(normCounts), dfAnnotation = dfAnn,
                       boolCaseCtrl = TRUE, vecSizeFactorsExternal = sf,
-                      vecDispersionsExternal = vecDispersions, scaNProc = 2)
+                      vecDispersionsExternal = vecDispersions, scaNProc = 1)
 ))
 Rprof(filename = NULL)
 print(
