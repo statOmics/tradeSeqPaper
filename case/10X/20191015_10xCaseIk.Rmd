@@ -1,0 +1,209 @@
+---
+title: "10X ik"
+author: "Koen Van den Berge"
+date: "11/7/2019"
+output: html_document
+---
+
+```{r}
+library(Matrix)
+library(aroma.light)
+countsFull <- readMM("~/Downloads/GSE128889_RAW/GSM3717977_SCmurinep12_matrix.mtx.gz")
+ft <- read.table("~/Downloads/GSE128889_RAW/GSM3717977_SCmurinep12_genes.tsv.gz")
+bc <- read.table("~/Downloads/GSE128889_RAW/GSM3717977_SCmurinep12_barcodes.tsv.gz")
+rownames(countsFull) <- as.character(ft[,2])
+```
+
+# Preprocessing, filtering and trajectory inference
+
+```{r}
+keep <- rowSums(countsFull > 1) >= 400
+counts <- countsFull[keep,]
+rownames(counts) <- ft[keep,2]
+countsFQ <- normalizeQuantileRank(as.matrix(counts))
+rownames(countsFQ) <- ft[keep,2]
+
+pca <- prcomp(t(log1p(countsFQ)), scale. = FALSE)
+rd <- pca$x[,1:8]
+
+plot(rd[,1:2], pch=16, cex=1/2)
+
+plotByGene <- function(rd, geneCount, ng=10, main=NULL, ...){
+  pal <- wesanderson::wes_palette("Zissou1", n=ng, type="continuous")
+  gg <- Hmisc::cut2(geneCount, g=ng)
+  plot(rd, pch=16, cex=1/2, col=pal[gg], main=main, ...)
+}
+
+# progenitors
+plotByGene(rd[, 1:2], countsFQ["Dpp4",], ng=2, main="Dpp4")
+plotByGene(rd[, 1:2], countsFQ["Wnt2",], ng=4, main="Wnt2")
+
+# group 2 cells
+plotByGene(rd[, 1:2], countsFQ["Icam1",], ng=4, main="Icam1")
+plotByGene(rd[, 1:2], countsFQ["Dlk1",], ng=4, main="Pref1") #Pref1 is also called Dlk1
+
+# group 3 cells
+plotByGene(rd[, 1:2], countsFQ["Clec11a",], ng=4, main="Clec11a")
+
+# group 4 cells
+plotByGene(rd[, 1:2], countsFull["Wnt6",], ng=2, main="Wnt6")
+
+
+# cluster
+set.seed(9)
+cl <- kmeans(rd, centers = 10)
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+pal <- sample(color, 12)
+plot(rd[,1:2], pch=16, cex=1/2, col=pal[cl$cluster])
+legend("bottomleft", legend=1:10, pch=16, col=pal, bty='n')
+
+# cluster 3 and 7 are progenitor cells
+# cluster 1, 5 and 10 are group 2 cells
+# cluster 2 and 6 are group 3 cells
+keepCells <- which(cl$cluster %in% c(1,2,3,5,7,10))
+countsFQ2 <- countsFQ[,keepCells]
+rd2 <- prcomp(t(log1p(countsFQ2)), scale. = FALSE)
+
+### umap
+library(umap)
+rdUmap <- umap(rd2$x[,1:20])
+plot(rdUmap$layout, pch=16, cex=1/3)
+
+rafalib::mypar(mfrow=c(3,2))
+# progenitors
+plotByGene(rdUmap$layout, countsFQ2["Dpp4",], ng=2, main="Prog: Dpp4")
+plotByGene(rdUmap$layout, countsFQ2["Wnt2",], ng=4, main="Prog: Wnt2")
+
+# group 2 cells
+plotByGene(rdUmap$layout, countsFQ2["Icam1",], ng=4, main="G2: Icam1")
+plotByGene(rdUmap$layout, countsFQ2["Dlk1",], ng=4, main="G2: Pref1") #Pref1 is also called Dlk1
+
+# group 3 cells
+plotByGene(rdUmap$layout, countsFQ2["Clec11a",], ng=4, main="G3: Clec11a")
+
+# group 4 cells
+plotByGene(rdUmap$layout, countsFull["Wnt6",keepCells], ng=2, main="G4: Wnt6")
+
+# cluster
+set.seed(12)
+pal <- wesanderson::wes_palette("Darjeeling1", n=6, type="continuous")
+cl <- kmeans(rdUmap$layout, centers = 6)
+plot(rdUmap$layout, pch=16, cex=1/2, col=pal[cl$cluster])
+legend("topleft", legend=1:6, pch=16, col=pal[1:6], bty='n')
+
+# slingshot
+library(slingshot)
+lin <- getLineages(rdUmap$layout, clusterLabels=cl$cluster, 
+                   start.clus=1, end.clus=c(5,2))
+plot(rdUmap$layout, pch=16, cex=1/2, col=pal[cl$cluster])
+lines(lin, lwd=2)
+crv <- getCurves(lin)
+plot(rdUmap$layout, pch=16, cex=1/2, col=pal[cl$cluster],
+     xlab="UMAP1", ylab="UMAP2", bty='l', asp=1)
+lines(crv, lwd=2, col="black")
+saveRDS(crv, file="crvUmap.rds")
+```
+
+# Evaluate optimal number of knots
+
+8 knots seem appropriate.
+
+```{r}
+library(tradeSeq)
+set.seed(3)
+aicMat1 <- evaluateK(countsFQ2, k=3:10, nGenes=200, sds=crv)
+set.seed(4)
+aicMat2 <- evaluateK(countsFQ2, k=3:10, nGenes=200, sds=crv)
+```
+
+# Model fitting and inference
+
+```{r}
+sce <- fitGAM(countsFQ2, sds=crv, nknots=8)
+saveRDS(sce, file="~/data/sceAdipose.rds")
+```
+
+# Progenitor cell markers other than Dpp4 and Wnt2 (startVsEndTest)
+
+```{r}
+seRes <- startVsEndTest(sce)
+ose <- order(seRes$waldStat, decreasing=TRUE)
+which(rownames(seRes)[ose] == "Wnt2") # ranked 263
+which(rownames(seRes)[ose] == "Dpp4") # ranked 450
+
+head(seRes[ose,], n=16)
+
+rafalib::mypar(mfrow=c(3,2))
+sapply(1:6, function(ii){
+  gene <- rownames(seRes)[ose][ii]
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, asp=1))
+})
+sapply(7:12, function(ii){
+  gene <- rownames(seRes)[ose][ii]
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, asp=1))
+})
+
+
+#figure for paper
+rafalib::mypar(mfrow=c(3,2))
+genes <- c("Dpp4", "Wnt2", 
+           "Pi16", "Akr1c18",
+           "Fn1", "Fbn1")
+sapply(genes, function(gene){
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, bty='n',
+                   xlab="UMAP1", ylab="UMAP2"))
+})
+```
+
+
+# Differentiated group 2 and group 3 markers (diffEndTest)
+
+Note that this is only restricted to the end points and is therefore limited.
+
+```{r}
+deRes <- diffEndTest(sce)
+ode <- order(deRes$waldStat, decreasing=TRUE)
+
+
+head(seRes[ode,], n=10)
+
+rafalib::mypar(mfrow=c(3,2))
+sapply(1:6, function(ii){
+  gene <- rownames(deRes)[ode][ii]
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, asp=1))
+})
+```
+
+# earlyDETest for entire cluster of group 2 and 3 cells
+
+```{r}
+plotGeneCount(crv, countsFQ2, models=sce, clusters = cl$cluster)
+resedt <- earlyDETest(sce, knots=c(3,7))
+oedt <- order(resedt$waldStat, decreasing=TRUE)
+
+head(resedt[oedt,], n=10)
+
+rafalib::mypar(mfrow=c(3,2))
+sapply(1:6, function(ii){
+  gene <- rownames(resedt)[oedt][ii]
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, asp=1))
+})
+
+
+#figure for paper
+rafalib::mypar(mfrow=c(1,2))
+genes <- c("Mgp", "Meox2")
+sapply(genes, function(gene){
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, bty='n',
+                   xlab="UMAP1", ylab="UMAP2", asp=1))
+})
+
+#figure for paper
+rafalib::mypar(mfrow=c(1,2))
+genes <- c("H19", "Col14a1")
+sapply(genes, function(gene){
+  print(plotByGene(rdUmap$layout, countsFQ2[gene,], ng=4, main=gene, bty='n',
+                   xlab="UMAP1", ylab="UMAP2", asp=1))
+})
+```
+

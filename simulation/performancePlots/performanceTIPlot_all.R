@@ -159,7 +159,7 @@ rm(cyclePlot)
 bifPlot <- readRDS(here("simulation", "performancePlots", "pMeanIstBifurcation.rds"))
 
 pDyntoyBif <- bifPlot +
-  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1, .5, 1),
+  scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1, .5, 1),
                      minor_breaks = c(0:5) * .1) +
   scale_y_continuous(limits = c(.5, 1)) +
   scale_color_manual(values = cols, breaks = names(cols)) +
@@ -179,7 +179,7 @@ pMulti <- ggplot(multiPlot, aes(x = FDP, y = TPR, col = method)) +
   geom_path(size = 1, aes(linetype = method)) +
   xlab("FDP") +
   scale_y_continuous(limits = c(.5, 1)) +
-  scale_x_continuous(limits = c(0, 0.5), breaks = c(0.01, 0.05, 0.1, .5, 1),
+  scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1, .5, 1),
                      minor_breaks = c(0:5) * .1) +
   scale_color_manual(values = cols, breaks = names(cols)) +
   scale_linetype_manual(values = linetypes, breaks = names(linetypes))
@@ -274,13 +274,16 @@ mtext("Min", side = 1, at = 1, cex = .7, font = 2)
 mtext("Max", side = 3, at = 1, cex = .7, font = 2)
 dev.off()
 
-p1 <- plot_grid(ggCycle,
+p1 <- plot_grid(ggCycle + coord_fixed(),
                 ggdraw() +
                   draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
                              scale = 1),
-                ggBif, NULL,
-                ggMulti, pCycle, NULL, pDyntoyBif, NULL, pMulti,
-                nrow = 2, ncol = 5, rel_heights = c(0.5, 1),
+                ggBif + coord_fixed(), NULL,
+                ggMulti + coord_fixed(),
+                pCycle + coord_fixed(), NULL,
+                pDyntoyBif + coord_fixed(), NULL,
+                pMulti + coord_fixed(),
+                nrow = 2, ncol = 5, rel_heights = c(0.8, 1),
                 rel_widths = c(1, 0.3, 1, 0.3, 1),
                 labels = c("a", "", "b", "", "c", "d", "", "e", "", "f")
 )

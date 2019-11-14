@@ -5,3 +5,6 @@ simulation/sim2_dyngen_cycle_72/datasets
 simulation/time/bigDyntoyDataset.rds
 .Rproj.user
 tradeSeqPaper.Rproj
+case/10X/20191018_sceTradeSeq.rds
+case/paul/20191108_compareClusterings_3Boots.html
+case/paul/20191108_compareClusterings_boots3To6.html

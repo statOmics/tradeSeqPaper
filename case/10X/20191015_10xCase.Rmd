@@ -1,0 +1,130 @@
+---
+title: "10X case study"
+author: "Koen Van den Berge"
+date: "10/15/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(dyndimred)
+library(slingshot)
+library(Seurat)
+library(tradeSeq)
+library(S4Vectors)
+library(SingleCellExperiment)
+library(tradeSeq)
+```
+
+
+```{r}
+library(Seurat)
+seu_trajectory <- readRDS("~/Downloads/adipose_differentiation-merick/seu_trajectory.rds")
+feature_info <- read_tsv("~/Downloads/adipose_differentiation-merick/feature_info.tsv")
+feature_mapper <- function(x) {feature_info %>% dplyr::slice(base::match(symbol, x)) %>% dplyr::pull(feature_id)}
+
+```
+
+
+# MDS
+
+```{r}
+set.seed(1)
+
+# MDS, we use the landmark mds because it is much faster and memory efficient
+lmds <- dyndimred::dimred_landmark_mds(Matrix::t(seu_trajectory@assays$spliced@scale.data))
+colnames(lmds) <- paste0("lmds_", seq_len(ncol(lmds)))
+lmds_object <- CreateDimReducObject(lmds, key = "lmds_", assay = "spliced")
+seu_trajectory@reductions$lmds <- lmds_object
+DimPlot(seu_trajectory, reduction = "lmds",pt.size = 0.5, label = TRUE, repel =TRUE)
+```
+# Clustering
+
+```{r}
+set.seed(1)
+seu_trajectory <- FindNeighbors(seu_trajectory, verbose = FALSE) %>% 
+  FindClusters(resolution = 0.25, verbose = FALSE)
+```
+
+# Trajectory inference
+
+```{r}
+dimred <- seu_trajectory@reductions$lmds@cell.embeddings
+clustering <- seu_trajectory@meta.data$spliced_snn_res.0.25
+
+
+start_cluster_id <- tibble(
+  expression = seu_trajectory@assays$spliced@counts[feature_mapper("Dpp4"), ],
+  cluster_id = clustering
+) %>% 
+  group_by(cluster_id) %>% 
+  summarise(expression = mean(expression)) %>% 
+  arrange(desc(expression)) %>% 
+  pull(cluster_id) %>% 
+  dplyr::first() %>% 
+  as.character()
+
+set.seed(1)
+lineages <- getLineages(dimred, clustering, start.clus = start_cluster_id)
+curves <- getCurves(lineages)
+
+plot(dimred, col = RColorBrewer::brewer.pal(9,"Set1")[clustering], asp = 1, pch = 16)
+lines(curves, lwd = 3, col = 'black')
+```
+
+
+# EDA
+
+DPP4+ cells are multipotent mesenchymal progenitors according to paper.
+However, this is not evident from the current dimension reduction or trajectory.
+
+```{r}
+plotGeneCount(curves, counts=counts, gene=feature_mapper("Dpp4"))
+plotGeneCount(curves, counts=counts, gene=feature_mapper("Wnt2"))
+```
+
+
+```{r}
+library(aroma.light) ; library(umap)
+countsFQ <- normalizeQuantileRank(counts)
+rdFQ <- umap(t(countsFQ))
+
+plot(rdFQ$layout, pch=16, cex=1/3)
+```
+
+
+
+
+
+
+
+# Differential expression
+
+## Evaluate optimal number of knots
+
+```{r}
+counts <- seu_trajectory@assays$spliced@counts
+keep <- rowSums(counts > 1) >= 100
+table(keep) #we keep 3280 genes for analysis.
+counts <- as.matrix(counts[keep,])
+#aicMat <- evaluateK(counts, sds=curves, k=3:10, nGenes=250, seed=3)
+#aicMat2 <- evaluateK(counts, sds=curves, k=3:10, nGenes=250, seed=4)
+```
+
+## Fit NB-GAM
+
+```{r}
+# sce <- fitGAM(counts = as.matrix(counts), sds = curves,
+#               nknots = 7)
+# saveRDS(sce, file="20191018_sceTradeSeq.rds")
+sce <- readRDS("20191018_sceTradeSeq.rds")
+```
+
+
+
+## Inference
+
+```{r}
+
+```
+

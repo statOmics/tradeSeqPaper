@@ -67,7 +67,7 @@ cds <- estimateSizeFactors(cds)
 cds <- estimateDispersions(cds)
 cds <- preprocessCDS(cds, num_dim = 20)
 
-cds <- reduceDimension(cds, reduction_method = "UMAP") # , python_home="/Applications/miniconda3/bin")
+cds <- reduceDimension(cds, reduction_method = "UMAP")# , python_home="/Applications/miniconda3/bin")
 cds <- partitionCells(cds)
 cds <- learnGraph(cds, RGE_method = "SimplePPT")
 # note that plot is different from vignette: we dont find branching in erythrocytes

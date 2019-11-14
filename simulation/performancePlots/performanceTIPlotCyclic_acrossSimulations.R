@@ -150,17 +150,36 @@ for(datasetIter in c(1:10)){
   assign(paste0("trajplot",datasetIter),ggTraj)
 }
 
-p1 <- plot_grid(trajplot1, trajplot2, trajplot3, trajplot4, trajplot5,
-              bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
-        nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
+# p1 <- plot_grid(trajplot1, trajplot2, trajplot3, trajplot4, trajplot5,
+#               bifplot1, bifplot2, bifplot3, bifplot4, bifplot5,
+#         nrow=2, ncol=5)#, rel_heights=c(0.8,1,0.8,1))
+# pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+# pLeg1
+# ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
+### fixed aspect ratio
+p1 <- plot_grid(trajplot1 + coord_fixed(), trajplot2 + coord_fixed(), trajplot3 + coord_fixed(), trajplot4 + coord_fixed(), trajplot5 + coord_fixed(),
+              bifplot1 + coord_fixed(), bifplot2 + coord_fixed(), bifplot3 + coord_fixed(), bifplot4 + coord_fixed(), bifplot5 + coord_fixed(),
+        nrow=2, ncol=5)#, rel_heights=c(0.8,1,0.8,1))
 pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg1
 ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
+
+
+# dev.new()
+# p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
+#                 bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
+#         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
+# pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+# pLeg2
+# ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
+## fixed aspect ratio
 dev.new()
-p2 <- plot_grid(trajplot6, trajplot7, trajplot8, trajplot9, trajplot10,
-                bifplot6, bifplot7, bifplot8, bifplot9, bifplot10,
-        nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
+p2 <- plot_grid(trajplot6 + coord_fixed(), trajplot7 + coord_fixed(), trajplot8 + coord_fixed(), trajplot9 + coord_fixed(), trajplot10 + coord_fixed(),
+                bifplot6 + coord_fixed(), bifplot7 + coord_fixed(), bifplot8 + coord_fixed(), bifplot9 + coord_fixed(), bifplot10 + coord_fixed(),
+        nrow=2, ncol=5, rel_heights=c(0.8,1))
 pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg2
 ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)

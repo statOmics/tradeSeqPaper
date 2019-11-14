@@ -9,8 +9,9 @@ library(BiocParallel)
 library(doParallel)
 NCORES <- 2
 palette(wes_palette("Darjeeling1", 10, type="continuous"))
-datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
-source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
+datasetClusters <- read.table("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
+source("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/20190611_helper.R")
+RNGversion("3.5.0")
 
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
@@ -27,7 +28,7 @@ for(datasetIter in 1:10){
   #pdf(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/dataset",datasetIter,".pdf"))
 
 
-  data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
+  data <- readRDS(paste0("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
   counts <- t(data$counts)
   falseGenes <- data$tde_overall$feature_id[data$tde_overall$differentially_expressed]
   nullGenes <- data$tde_overall$feature_id[!data$tde_overall$differentially_expressed]

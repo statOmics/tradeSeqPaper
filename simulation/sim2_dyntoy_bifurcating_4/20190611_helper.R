@@ -65,9 +65,9 @@ getWeightsBifurcation <- function(data, crv){
 
 #### Monocle
 # downloaded from https://github.com/cole-trapnell-lab/monocle-release on June 11, 2019.
-source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/differential_expression.R")
-source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/utils.R")
-source("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/expr_models.R")
+source("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/differential_expression.R")
+source("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/utils.R")
+source("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/methodsPaper/monocle-release/R/expr_models.R")
 
 
 

@@ -17,6 +17,7 @@ library(tidyverse)
 library(dyno)
 library(dyntoy)
 library(patchwork)
+RNGversion("3.5.0")
 
 
 # set.seed(12)
@@ -27,7 +28,7 @@ library(patchwork)
 #     differentially_expressed_rate = .2
 #   )
 
-data <- readRDS("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/data.rds")
+data <- readRDS("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_multifurcating_4/data.rds")
 counts <- t(data$counts)
 falseGenes <- data$tde_overall$feature_id[data$tde_overall$differentially_expressed]
 nullGenes <- data$tde_overall$feature_id[!data$tde_overall$differentially_expressed]
@@ -135,6 +136,8 @@ tradeSeq <- p.adjust(endRes$pval,"fdr")<=0.05
 vennC <- cbind(edgeR,tradeSeq)
 vennDiagram(vennC)
 ```
+
+
 
 # Test for different expression pattern
 
@@ -249,3 +252,123 @@ plot_fdrtprcurve(cobraplot, pointsize=0, yaxisrange=c(0.6,1))
 pEst <- plot_fdrtprcurve(cobraplot, pointsize=0, yaxisrange=c(0.6,1), xaxisrange=c(0,0.5))
 
 ```
+
+
+
+
+# OLD
+
+# edgeR using basis functions
+
+## 3 knots
+
+```{r}
+gamListIk <- fitGAM(counts[1:100,], pseudotime=pseudoT, cellWeights=cWeights, 
+                  nknots=3, verbose=FALSE)
+
+d <- DGEList(counts)
+d <- calcNormFactors(d)
+designSmooth <- predict(gamListIk[[1]], type="lpmatrix")[,-1]
+d <- estimateDisp(d, designSmooth)
+fit <- glmFit(d, designSmooth)
+# every lineage ends at a knot so we may take the estimated coefficient as a mean.
+plotGeneCount(crv, counts, gene=rownames(counts)[1], models=gamListIk)
+# lineage 1 has 3 knots, lineage 2 has 2 knots, lineage 3 has 3 knots.
+
+L <- matrix(0, nrow=ncol(fit$coefficients), ncol=3)
+rownames(L) <- colnames(fit$coefficients)
+colnames(L) <- c("3v1", "2v1", "3v2")
+L[ c("s(t3):l3.3", "s(t1):l1.3") ,"3v1"] <- c(1,-1)
+L[ c("s(t2):l2.2", "s(t1):l1.3") ,"2v1"] <- c(1,-1)
+L[ c("s(t3):l3.3", "s(t2):l2.2") ,"3v2"] <- c(1,-1)
+lrtSmooth <- glmLRT(fit, contrast=L) #omnibus test between end clusters (clusters 4, 6 and 7).
+deGenesEdgeRSmooth <- rownames(lrtSmooth$table)[p.adjust(lrtSmooth$table$PValue,"fdr")<=0.05]
+mean(falseGenes%in%deGenesEdgeRSmooth) #TPR
+mean(deGenesEdgeRSmooth%in%nullGenes) #FDR
+
+mean(p.adjust(lrtSmooth$table$PValue,"fdr")<=0.05) # everything is significant?
+```
+
+## 6 knots
+
+```{r}
+gamListIk6 <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, 
+                  nknots=6, verbose=FALSE)
+endRes6 <- diffEndTest(gamListIk6)
+deGenesEndGam6 <- rownames(counts)[which(p.adjust(endRes6$pvalue,"fdr")<=0.05)]
+mean(falseGenes%in%deGenesEndGam6) #TPR
+mean(!deGenesEndGam6%in%falseGenes) #FDR
+```
+
+
+```{r}
+d <- DGEList(counts)
+d <- calcNormFactors(d)
+designSmooth <- predict(gamListIk6[[1]], type="lpmatrix")[,-1]
+d <- estimateDisp(d, designSmooth)
+fit <- glmFit(d, designSmooth)
+# every lineage ends at a knot so we may take the estimated coefficient as a mean.
+plotGeneCount(crv, counts, gene=rownames(counts)[1], models=gamListIk6)
+# lineage 1 has 3 knots, lineage 2 has 2 knots, lineage 3 has 3 knots.
+L <- matrix(0, nrow=ncol(fit$coefficients), ncol=3)
+rownames(L) <- colnames(fit$coefficients)
+colnames(L) <- c("3v1", "2v1", "3v2")
+L[ c("s(t3):l3.6", "s(t1):l1.6") ,"3v1"] <- c(1,-1)
+L[ c("s(t2):l2.5", "s(t1):l1.6") ,"2v1"] <- c(1,-1)
+L[ c("s(t3):l3.6", "s(t2):l2.5") ,"3v2"] <- c(1,-1)
+lrtSmooth <- glmLRT(fit, contrast=L) #omnibus test between end clusters (clusters 4, 6 and 7).
+deGenesEdgeRSmooth <- rownames(lrtSmooth$table)[p.adjust(lrtSmooth$table$PValue,"fdr")<=0.05]
+mean(falseGenes%in%deGenesEdgeRSmooth) #TPR
+mean(deGenesEdgeRSmooth%in%nullGenes) #FDR
+
+```
+
+
+## 10 knots
+
+```{r}
+gamListIk10 <- fitGAM(counts, pseudotime=pseudoT, cellWeights=cWeights, 
+                  nknots=10, verbose=FALSE)
+endRes10 <- diffEndTest(gamListIk10)
+deGenesEndGam10 <- rownames(counts)[which(p.adjust(endRes10$pvalue,"fdr")<=0.05)]
+mean(falseGenes%in%deGenesEndGam10) #TPR
+mean(!deGenesEndGam10%in%falseGenes) #FDR
+```
+
+```{r}
+d <- DGEList(counts)
+d <- calcNormFactors(d)
+designSmooth <- predict(gamListIk10[[1]], type="lpmatrix")[,-1]
+d <- estimateDisp(d, designSmooth)
+fit <- glmFit(d, designSmooth)
+# every lineage ends at a knot so we may take the estimated coefficient as a mean.
+plotGeneCount(crv, counts, gene=rownames(counts)[1], models=gamListIk6)
+# lineage 1 has 3 knots, lineage 2 has 2 knots, lineage 3 has 3 knots.
+L <- matrix(0, nrow=ncol(fit$coefficients), ncol=3)
+rownames(L) <- colnames(fit$coefficients)
+colnames(L) <- c("3v1", "2v1", "3v2")
+L[ c("s(t3):l3.6", "s(t1):l1.6") ,"3v1"] <- c(1,-1)
+L[ c("s(t2):l2.5", "s(t1):l1.6") ,"2v1"] <- c(1,-1)
+L[ c("s(t3):l3.6", "s(t2):l2.5") ,"3v2"] <- c(1,-1)
+lrtSmooth10 <- glmLRT(fit, contrast=L) #omnibus test between end clusters (clusters 4, 6 and 7).
+deGenesEdgeRSmooth10 <- rownames(lrtSmooth10$table)[p.adjust(lrtSmooth10$table$PValue,"fdr")<=0.05]
+mean(falseGenes%in%deGenesEdgeRSmooth10) #TPR
+mean(deGenesEdgeRSmooth10%in%nullGenes) #FDR
+
+```
+
+# compare GAM end point vs edgeR analysis and edgeR smooth
+
+```{r}
+library(rafalib)
+mypar(mfrow=c(1,1))
+
+## compare
+edgeR <- p.adjust(lrt$table$PValue,"fdr")<=0.05
+edgeRSmooth <- p.adjust(lrtSmooth$table$PValue,"fdr")<=0.05
+tradeSeq <- p.adjust(endRes$pval,"fdr")<=0.05
+vennC <- cbind(edgeR, edgeRSmooth, tradeSeq)
+vennDiagram(vennC)
+```
+
+
