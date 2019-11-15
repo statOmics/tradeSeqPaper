@@ -8,6 +8,7 @@ library(edgeR)
 library(rafalib)
 library(wesanderson)
 library(ggplot2)
+assignInNamespace("data.frame", data.frame, "ggplot2")
 library(cowplot)
 library(iCOBRA)
 library(scales)
@@ -294,4 +295,4 @@ p2
 
 # ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
-ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)

@@ -1,4 +1,4 @@
-setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/")
+setwd("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -163,7 +163,7 @@ p1 <- plot_grid(trajplot1 + coord_fixed(), trajplot2 + coord_fixed(), trajplot3 
         nrow=2, ncol=5)#, rel_heights=c(0.8,1,0.8,1))
 pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg1
-ggsave("~/Dropbox/resarch/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 
 
@@ -190,6 +190,7 @@ alphaSeq <- c(seq(1e-16,1e-9,length=100),seq(5e-9,1e-3,length=250),seq(5e-2,1,le
 for(ii in 1:length(cobraFiles)){
     cobra <- readRDS(cobraFiles[ii])
     pvals <- pval(cobra)
+    if(all(pvals$Monocle3 == 1)) next
     colnames(pvals) <- gsub(colnames(pvals),pattern="tradeR",replacement="tradeSeq")
     truths <- as.logical(truth(cobra)[,1])
     # performance for all p-value based methods
