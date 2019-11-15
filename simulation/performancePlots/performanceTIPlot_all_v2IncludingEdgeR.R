@@ -210,7 +210,8 @@ pAll <- ggplot(full_join(CyclePlot, bifPlot),
                aes(x = FDP, y = TPR, col = method)) +
   geom_path(size = 1, aes(linetype = method)) +
   scale_color_manual(values = cols, breaks = names(cols)) +
-  scale_linetype_manual(values = linetypes, breaks = names(linetypes))
+  scale_linetype_manual(values = linetypes, breaks = names(linetypes)) +
+  theme(rect =element_blank())
 
 legend_all <- get_legend(pAll + labs(col = "", linetype = "") +
                            theme(legend.position = "bottom",
