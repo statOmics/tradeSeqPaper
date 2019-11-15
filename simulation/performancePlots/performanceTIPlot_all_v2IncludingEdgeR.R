@@ -296,3 +296,35 @@ p2
 # ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
+
+#### Hector plot
+p1 <- plot_grid(ggCycle + coord_fixed() + theme(rect =element_blank()),
+                #ggdraw() +
+                 # draw_image("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
+                  #           scale = 1)  + theme(rect =element_blank()),
+                NULL,
+                ggBif + coord_fixed() + theme(rect =element_blank()), NULL,
+                ggMulti + coord_fixed() + theme(rect =element_blank()),
+                pCycle + coord_fixed() + theme(rect =element_blank()), NULL,
+                pDyntoyBif + coord_fixed() + theme(rect =element_blank()), NULL,
+                pMulti + coord_fixed() + theme(rect =element_blank()),
+                nrow = 2, ncol = 5, rel_heights = c(0.8, 1),
+                rel_widths = c(1, 0.3, 1, 0.3, 1),
+                labels = c("a", "", "b", "", "c", "d", "", "e", "", "f")
+)
+p1
+
+p2 <- plot_grid(p1, legend_all, ncol = 1, rel_heights = c(1, .25))
+p2
+
+
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_hector.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
+
+
+
+
+
+
+
