@@ -250,21 +250,8 @@ ggMulti <- ggplot(as.data.frame(rdMulti), aes(x = PC1, y = PC2)) +
   ggtitle("Multifurcating dataset") +
   theme(plot.title = element_text(face = "bold", hjust = .5))
 
-# png("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendHorizontal.png",
-#     width = 2, height = 1, units = "in", res = 300)
-# rafalib::mypar()
-# plot(x = 0:12, y = seq(0, 1, length = 13),
-#      type = "n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
-# for (i in 1:12) {
-#   polygon(x = c(0, 1, 1, 0) + i - 1, y = c(0, 0, 1, 1), col = pal[i],
-#           density = -1, border = NA)}
-# mtext("True pseudotime", side = 3, at = 3, cex = 1.35)
-# mtext("Min", side = 1, at = 0, cex = 1)
-# mtext("Max", side = 1, at = 12, cex = 1)
-# dev.off()
-
 png("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
-    width = 1.2, height = 2, units = "in", res = 300)
+    width = 1.2, height = 2, units = "in", res = 300, bg = "transparent")
 rafalib::mypar()
 plot(y = 0:12, x = seq(0, 1, length = 13),
      type = "n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
