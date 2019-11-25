@@ -1,4 +1,4 @@
-setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/")
+setwd("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -8,6 +8,7 @@ library(edgeR)
 library(rafalib)
 library(wesanderson)
 library(ggplot2)
+assignInNamespace("data.frame", data.frame, "ggplot2")
 library(cowplot)
 library(iCOBRA)
 library(scales)
@@ -276,7 +277,7 @@ dev.off()
 
 p1 <- plot_grid(ggCycle + coord_fixed(),
                 ggdraw() +
-                  draw_image("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
+                  draw_image("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/plots/wesandersonColorLegendVertical.png",
                              scale = 1),
                 ggBif + coord_fixed(), NULL,
                 ggMulti + coord_fixed(),

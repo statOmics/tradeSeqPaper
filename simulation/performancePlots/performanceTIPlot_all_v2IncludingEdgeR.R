@@ -146,7 +146,8 @@ theme_update(legend.position = "none",
              axis.text.y = element_text(size = rel(.8)))
 
 ### cyclic performance ####
-cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2IncludingEdgeR.rds"))
+cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2.rds"))
+# cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2IncludingEdgeR.rds"))
 
 pCycle <- cyclePlot + scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1,.5,1),
                    minor_breaks = c(0:5) * .1) +
@@ -295,6 +296,8 @@ p2 <- plot_grid(p1, legend_all, ncol = 1, rel_heights = c(1, .25))
 p2
 
 # ggsave("~/Documents/simPerformance.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
