@@ -123,16 +123,16 @@ rm(data, counts, truePseudotime, g, normCounts, pca, rd, crv, lin, cl)
 
 ### prepare performance plots ####
 cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
-          "#e41a1c", "#e78ac3", "#ff7f00", "darkgoldenrod1")
+          "#e41a1c", "#e78ac3", "#ff7f00", "gold", "darkgoldenrod1")
 names(cols) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                  "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                  "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                 "BEAM", "GPfates", "edgeR", "ImpulseDE2")
-linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 7))
+                 "BEAM", "GPfates", "edgeR", "edgeR_assoc", "ImpulseDE2")
+linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 8))
 names(linetypes) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                       "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                       "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                      "BEAM", "GPfates", "edgeR", "ImpulseDE2")
+                      "BEAM", "GPfates", "edgeR", "edgeR_assoc", "ImpulseDE2")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -146,7 +146,7 @@ theme_update(legend.position = "none",
              axis.text.y = element_text(size = rel(.8)))
 
 ### cyclic performance ####
-cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2.rds"))
+cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2IncludingEdgeR.rds"))
 # cyclePlot <- readRDS(here("simulation", "performancePlots", "pMeanCycle_v2IncludingEdgeR.rds"))
 
 pCycle <- cyclePlot + scale_x_continuous(limits = c(0, 0.6), breaks = c(0.01, 0.05, 0.1,.5,1),
@@ -189,9 +189,10 @@ pMulti <- ggplot(multiPlot, aes(x = FDP, y = TPR, col = method)) +
 rm(multiPlot)
 
 ## Get a common legend ####
-cobraCycle <- readRDS(here("simulation", "sim2_dyngen_cycle_72", "datasets", "cobra1.rds"))
-pval(cobraCycle) <- pval(cobraCycle)[,c("tradeSeq_slingshot_assoc", "Monocle3")]
-colnames(pval(cobraCycle))[2] <- "Monocle3_assoc"
+cobraCycle <- readRDS(here("simulation", "sim2_dyngen_cycle_72", "datasets", "cobra1_v2IncludingEdgeR.rds"))
+pval(cobraCycle) <- pval(cobraCycle)[,c("tradeSeq_slingshot_assoc", "Monocle3", "edgeR")]
+colnames(pval(cobraCycle)) <- gsub(colnames(pval(cobraCycle)),pattern="Monocle3",replacement="Monocle3_assoc")
+colnames(pval(cobraCycle)) <- gsub(colnames(pval(cobraCycle)),pattern="edgeR",replacement="edgeR_assoc")
 cobraCycle <- calculate_adjp(cobraCycle)
 cobraCycle <- calculate_performance(cobraCycle, binary_truth = "status")
 CyclePlot <- data.frame(FDP = cobraCycle@fdrtprcurve$FDR,
@@ -310,7 +311,7 @@ p2 <- plot_grid(p1, legend_all, ncol = 1, rel_heights = c(1, .25))
 p2
 
 
-ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_hector.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/simPerformance_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 
 

@@ -16,16 +16,16 @@ library(dplyr)
 
 ### prepare performance plots ####
 cols <- c(rep(c("#C6DBEF", "#08306B"), each = 3), "#4292C6", "#4daf4a",
-          "#e41a1c", "#e78ac3", "#ff7f00", "dodgerblue")
+          "#e41a1c", "#e78ac3", "#ff7f00", "gold" , "dodgerblue")
 names(cols) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                  "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                  "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                 "BEAM", "GPfates", "edgeR", "tradeSeq_slingshot_UMAP_assoc")
-linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 7))
+                 "BEAM", "GPfates", "edgeR", "edgeR_assoc", "tradeSeq_slingshot_UMAP_assoc")
+linetypes <- c(rep(c("dashed", "dotdash", "solid"), 2), rep("solid", 8))
 names(linetypes) <- c("tradeSeq_slingshot_end", "tradeSeq_GPfates_end", "tradeSeq_Monocle2_end",
                       "tradeSeq_slingshot_pattern", "tradeSeq_GPfates_pattern",
                       "tradeSeq_Monocle2_pattern", "tradeSeq_slingshot_assoc", "Monocle3_assoc",
-                      "BEAM", "GPfates", "edgeR", "tradeSeq_slingshot_UMAP_assoc")
+                      "BEAM", "GPfates", "edgeR", "edgeR_assoc", "tradeSeq_slingshot_UMAP_assoc")
 
 theme_set(theme_bw())
 theme_update(legend.position = "none",
@@ -47,6 +47,8 @@ plotPerformanceCurve <- function(cobraObject){
   cn <- colnames(pval(cobraObject))
   cn <- gsub(cn,pattern="tradeR",replacement="tradeSeq")
   cn[cn == "Monocle3"] <- "Monocle3_assoc"
+  cn[cn == "edgeR"] <- "edgeR_assoc"
+
   colnames(pval(cobraObject)) <- cn
 
   cobraObject <- calculate_adjp(cobraObject)
@@ -161,9 +163,10 @@ for(datasetIter in c(1:10)){
 p1 <- plot_grid(trajplot1 + coord_fixed(), trajplot2 + coord_fixed(), trajplot3 + coord_fixed(), trajplot4 + coord_fixed(), trajplot5 + coord_fixed(),
               bifplot1 + coord_fixed(), bifplot2 + coord_fixed(), bifplot3 + coord_fixed(), bifplot4 + coord_fixed(), bifplot5 + coord_fixed(),
         nrow=2, ncol=5)#, rel_heights=c(0.8,1,0.8,1))
-pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pLeg1
-ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+# pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+# pLeg1
+p1
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyngen_cycle_72/individualPerformance_cyclic1To5_v2IncludingEdgeR.pdf", width = unit(15, "in"), height = unit(9, "in"), scale = .7)
 
 
 
@@ -192,6 +195,8 @@ for(ii in 1:length(cobraFiles)){
     pvals <- pval(cobra)
     if(all(pvals$Monocle3 == 1)) next
     colnames(pvals) <- gsub(colnames(pvals),pattern="tradeR",replacement="tradeSeq")
+    colnames(pvals) <- gsub(colnames(pvals),pattern="edgeR",replacement="edgeR_assoc")
+
     truths <- as.logical(truth(cobra)[,1])
     # performance for all p-value based methods
     hlp <- apply(pvals,2,function(x){
@@ -215,6 +220,7 @@ for(ii in 1:length(cobraFiles)){
 library(tidyverse)
 df <- as_tibble(do.call(rbind,resList))
 df$method <- gsub(x=df$method,pattern="Monocle3",replacement="Monocle3_assoc")
+df$method <- gsub(x=df$method,pattern="edgdeR",replacement="edgeR_assoc")
 df <- df %>% group_by(method,cutoff) %>%
         summarize(meanTPR=mean(tpr,na.rm=TRUE),
                 meanFDR=mean(fdr,na.rm=TRUE)) %>% arrange(method,cutoff)

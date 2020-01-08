@@ -132,7 +132,8 @@ ariPam <- c(0.1562204, 0.1651667, 0.1519890, 0.1616606, 0.1524510, 0.1511518)
 
 par(bty='l')
 df <- data.frame(ari=c(ariRSEC, ariRSECNoDR, ariPam),
-                 method=factor(rep(c("RSEC", "RSEC_noDR", "PAM"), each=6)))
+                 method=factor(rep(c("RSEC", "RSEC_noDR", "PAM"), each=6),
+                               levels=c("PAM", "RSEC_noDR", "RSEC")))
 boxplot(ari~method, data=df,
         xlab="Clustering methods", ylab="Adjusted Rand Index")
 stripchart(ari~method, data=df, vertical=TRUE, method="jitter", col=c("bisque", "coral", "darkcyan"), pch=19, add=TRUE, cex=1.4)

@@ -1,4 +1,4 @@
-setwd("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/")
+setwd("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/")
 library(here)
 library(slingshot)
 library(RColorBrewer)
@@ -12,6 +12,7 @@ library(cowplot)
 library(iCOBRA)
 library(scales)
 library(dplyr)
+RNGversion("3.5.0")
 
 
 ### prepare performance plots ####
@@ -39,7 +40,7 @@ theme_update(legend.position = "none",
              axis.text.y = element_text(size = rel(.8)))
 
 ### bifurcating dyntoy plot  ####
-dir <- "~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
+dir <- "~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets"
 cobraFiles <- list.files(dir, pattern="cobra*", full.names=TRUE)
 cobraFiles <- cobraFiles[c(1,3:10,2)] #order from 1 to 10
 
@@ -100,7 +101,7 @@ pLeg <- plot_grid(pAll, legend_all, rel_heights=c(1,0.2), nrow=2, ncol=1)
 pLeg
 
 #### plot with trajectories
-datasetClusters <- read.table("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
+datasetClusters <- read.table("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasetClustersSlingshot.txt", header=TRUE)
 
   FQnorm <- function(counts){
     rk <- apply(counts,2,rank,ties.method='min')
@@ -114,7 +115,7 @@ pal <- wes_palette("Zissou1", 12, type = "continuous")
 
 for(datasetIter in c(1:10)){
 
-  data <- readRDS(paste0("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
+  data <- readRDS(paste0("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/datasets/20190326_dyntoyDataset_", datasetIter, ".rds"))
   counts <- t(data$counts)
 
   # get milestones
@@ -157,16 +158,17 @@ for(datasetIter in c(1:10)){
 p1 <- plot_grid(trajplot1 + coord_fixed(), trajplot2 + coord_fixed(), trajplot3 + coord_fixed(), trajplot4 + coord_fixed(), trajplot5 + coord_fixed(),
               bifplot1 + coord_fixed(), bifplot2 + coord_fixed(), bifplot3 + coord_fixed(), bifplot4 + coord_fixed(), bifplot5 + coord_fixed(),
         nrow=2, ncol=5, rel_heights=c(0.8,1))
-pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
-pLeg1
-ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformanceFirst1To5.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+#pLeg1 <- plot_grid(p1, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
+#pLeg1
+p1
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformanceFirst1To5.pdf", width = unit(15, "in"), height = unit(9, "in"), scale = .7)
 dev.new()
 p2 <- plot_grid(trajplot6 + coord_fixed(), trajplot7 + coord_fixed(), trajplot8 + coord_fixed(), trajplot9 + coord_fixed(), trajplot10 + coord_fixed(),
                 bifplot6 + coord_fixed(), bifplot7 + coord_fixed(), bifplot8 + coord_fixed(), bifplot9 + coord_fixed(), bifplot10 + coord_fixed(),
         nrow=2, ncol=5, rel_heights=c(0.8,1,0.8,1))
 pLeg2 <- plot_grid(p2, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pLeg2
-ggsave("~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformance6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
+ggsave("~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/sim2_dyntoy_bifurcating_4/individualPerformance6To10.pdf", width = unit(15, "in"), height = unit(10, "in"), scale = .7)
 
 ### mean plot
 # Monocle (hence also BEAM) only finds one lineage in datasets 3 6 9
@@ -313,4 +315,4 @@ scale_linetype_manual(values = linetypes, breaks = names(linetypes)) + xlab("FDR
 
 pMeanIstLeg <- plot_grid(pMeanIst, legend_all, rel_heights=c(1,0.15), nrow=2, ncol=1)
 pMeanIstLeg
-saveRDS(pMeanIst,file="~/Dropbox/PhD/Research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/pMeanIstBifurcation.rds")
+saveRDS(pMeanIst,file="~/Dropbox/research/PhD/research/singleCell/trajectoryInference/trajectoryDE/tradeSeqPaper/simulation/performancePlots/pMeanIstBifurcation.rds")
